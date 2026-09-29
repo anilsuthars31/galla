@@ -10,6 +10,7 @@ import {
   sampleStatementRows,
   type CategoryId,
   type ExpenseCategory,
+  type LoadedClassifier,
   type MonthIndex,
   type Overrides,
   type RawTxn,
@@ -17,7 +18,7 @@ import {
 } from '../engine';
 import { store } from './storage';
 import { useReducedMotion, useTheme } from './theme';
-import { downloadText, readStatementFile } from './fileio';
+import { downloadText, loadModel, readStatementFile } from './fileio';
 import { monthViews } from './model';
 import { Header } from './components/Header';
 import { SourceBar, ErrorBanner } from './components/SourceBar';
@@ -69,8 +70,21 @@ export function App() {
   const ledgerRef = useRef<HTMLElement>(null);
   const fileInput = useRef<HTMLInputElement>(null);
 
-  const { txns, analysis } = useMemo(() => processStatement(data.raw, overrides), [data.raw, overrides]);
+  const [classifier, setClassifier] = useState<LoadedClassifier | null>(null);
+  useEffect(() => {
+    let live = true;
+    loadModel().then((m) => live && setClassifier(m));
+    return () => {
+      live = false;
+    };
+  }, []);
+
+  const { txns, analysis } = useMemo(
+    () => processStatement(data.raw, overrides, classifier ?? undefined),
+    [data.raw, overrides, classifier],
+  );
   const months = useMemo(() => monthViews(analysis), [analysis]);
+  const reviewCount = useMemo(() => txns.filter((t) => t.source === 'review').length, [txns]);
   const lastActual = analysis.months[analysis.months.length - 1]!.month;
   const sel = selected !== null && months.some((m) => m.month === selected) ? selected : lastActual;
 
@@ -165,7 +179,16 @@ export function App() {
         }}
       />
       <main className="wrap" id="main">
-        <SourceBar source={data.source} analysis={analysis} count={txns.length} />
+        <SourceBar
+          source={data.source}
+          analysis={analysis}
+          count={txns.length}
+          review={reviewCount}
+          onReview={() => {
+            setFilter({ ...EMPTY_FILTER, review: true });
+            ledgerRef.current?.scrollIntoView({ behavior: reducedMotion ? 'auto' : 'smooth', block: 'start' });
+          }}
+        />
         {error && <ErrorBanner message={error} onClose={() => setError(null)} />}
 
         <SummaryCards analysis={analysis} months={months} />

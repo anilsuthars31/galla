@@ -2,7 +2,16 @@ import { formatDate, type Analysis } from '../../engine';
 import type { Source } from '../App';
 import { Icon } from './Icons';
 
-export function SourceBar({ source, analysis, count }: { source: Source; analysis: Analysis; count: number }) {
+interface Props {
+  source: Source;
+  analysis: Analysis;
+  count: number;
+  /** Rows the model wasn't sure about (confidence < 0.8). */
+  review: number;
+  onReview: () => void;
+}
+
+export function SourceBar({ source, analysis, count, review, onReview }: Props) {
   return (
     <div className="source section-enter">
       {source.kind === 'sample' ? (
@@ -25,6 +34,11 @@ export function SourceBar({ source, analysis, count }: { source: Source; analysi
         </>
       )}
       <span className="spacer" />
+      {review > 0 && (
+        <button className="chip review-jump" onClick={onReview} title="Show the transactions that need you to pick a category">
+          {review.toLocaleString('en-IN')} need review
+        </button>
+      )}
       <span className="num">
         {formatDate(analysis.period.from)} – {formatDate(analysis.period.to)} · {count.toLocaleString('en-IN')} transactions
       </span>

@@ -1351,6 +1351,39 @@ select.field {
   background: var(--info-bg);
   color: var(--info);
 }
+.chip.review-jump {
+  border: 1px dashed var(--warn);
+  background: var(--warn-bg);
+  color: var(--warn);
+  font-weight: 600;
+}
+.sugg {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  font-size: 11.5px;
+  color: var(--muted);
+}
+.sbtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 9px;
+  border: 1px dashed var(--warn);
+  border-radius: 999px;
+  background: var(--panel);
+  color: var(--ink);
+  font: inherit;
+  cursor: pointer;
+}
+.sbtn:hover {
+  background: var(--warn-bg);
+}
+.sbtn .num {
+  color: var(--muted);
+}
 .more {
   margin-top: 14px;
   display: flex;

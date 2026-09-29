@@ -185,6 +185,23 @@ function Row({ t, flash, onChange }: { t: Txn; flash: boolean; onChange: (c: Cat
           {t.source === 'owner' && <span className="tag mine">Yours</span>}
         </b>
         <span title={t.narration}>{t.narration}</span>
+        {t.source === 'review' && t.suggestions.length > 0 && (
+          <div className="sugg" aria-label={`Suggested categories for ${t.payee}`}>
+            <span>Maybe</span>
+            {t.suggestions.slice(0, 2).map((s) => (
+              <button
+                key={s.category}
+                className="sbtn"
+                onClick={() => onChange(s.category)}
+                title={`Model is ${Math.floor(s.probability * 100)}% sure. Click to use ${CATEGORIES[s.category].name} for every payment to ${t.payee}.`}
+              >
+                <span className="sw" style={{ background: catColor(s.category) }} />
+                {CATEGORIES[s.category].name}
+                <span className="num">{Math.floor(s.probability * 100)}%</span>
+              </button>
+            ))}
+          </div>
+        )}
       </div>
       <label className={`catsel${t.source === 'owner' ? ' mine' : t.source === 'review' ? ' review' : ''}`} role="cell">
         <span className="sw" style={{ background: catColor(t.category) }} />
@@ -194,7 +211,7 @@ function Row({ t, flash, onChange }: { t: Txn; flash: boolean; onChange: (c: Cat
             <optgroup label="Suggested">
               {t.suggestions.map((s) => (
                 <option key={s.category} value={s.category}>
-                  {CATEGORIES[s.category].name} · {Math.round(s.probability * 100)}%
+                  {CATEGORIES[s.category].name} · {Math.floor(s.probability * 100)}%
                 </option>
               ))}
             </optgroup>
