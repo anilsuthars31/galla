@@ -7,7 +7,18 @@ with a 3D month-by-month view of money in and out.
 Everything runs in the browser. There is no backend, no login and no tracking: the statement never
 leaves the device. Only the owner's category corrections (and the theme) are saved, in `localStorage`.
 
-BTech final project (solo).
+BTech final project (solo), built with Claude Code for the "AI augmented software development" sprint.
+
+[![CI](https://github.com/anilsuthars31/galla/actions/workflows/ci.yml/badge.svg)](https://github.com/anilsuthars31/galla/actions/workflows/ci.yml)
+**Live demo:** https://anilsuthars31.github.io/galla/ (opens with sample data; your file stays in your browser)
+
+| Document | What's in it |
+|---|---|
+| [docs/decisions.md](docs/decisions.md) | The design decisions and why they were made |
+| [docs/results.md](docs/results.md) | Classifier evaluation: baselines, per-class scores, confusion matrix |
+| [docs/forecast_results.md](docs/forecast_results.md) | Forecast backtest: months 1-3 in, months 4-6 predicted, MAPE vs simple baselines |
+| [docs/ai-usage.md](docs/ai-usage.md) | How Claude Code was used, what I decided, what was caught |
+| [CLAUDE.md](CLAUDE.md) | The working brief the AI follows in this repo |
 
 ## Features
 
@@ -45,7 +56,16 @@ Open `http://localhost:5173/?no3d` to see the fallback used when WebGL is unavai
 cd ml
 python -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
+
+python check_data.py              # read-only report on data/synthetic and data/labels
+python train.py                   # leave-one-file-out check, then writes public/model.json
+python evaluate.py                # docs/results.md + docs/confusion_matrix.png
+python -m unittest -v test_features
 ```
+
+`train.py` also writes `tests/fixtures/classifier_parity.json`; run `npm test` afterwards so the parity
+test confirms the browser gives the same probabilities as Python. `rules_bridge.mts` lets the Python
+scripts run the app's own keyword rules through Node (needs Node 22.18+).
 
 ## Architecture
 
@@ -56,6 +76,7 @@ src/
     excel.ts         .xls/.xlsx bytes -> rows (SheetJS), loaded only when needed
     narration.ts     payment rail (UPI/NEFT/IMPS/RTGS/NACH/ATM/charges...) + payee
     rules.ts         keyword rules -> category
+    classifier.ts    V3 model inference from public/model.json (features mirror ml/features.py)
     categorize.ts    owner override > rule > model (p >= 0.8) > needs review
     recurring.ts     monthly + quarterly payment detection
     forecast.ts      3-month conservative forecast + closing balance
@@ -73,7 +94,10 @@ tests/
   engine/            Vitest tests for every engine module
   fixtures/          anonymized bank-format samples (SBI, HDFC, ICICI, Axis, Kotak) + narrations
 prototype/           earlier single-file prototype (reference; the engine was ported from it)
-ml/                  Python training + evaluation
+ml/                  Python training + evaluation (check_data, features, train, evaluate)
+public/model.json    trained classifier, loaded by the app at startup
+docs/                decisions, evaluation results, AI-usage log
+.github/workflows/   CI (tests + build on every push) and GitHub Pages deploy
 data/
   synthetic/         generated statements (source=synthetic)
   labels/            hand-labelled real rows, the only test set
@@ -123,9 +147,10 @@ Each transaction is decided in this order:
    - `ATM`, `CASH WDL` → `other` (kirana owners often pay suppliers in cash)
    - money in with `REFUND`, `REVERSAL`, `INTEREST`, `CASHBACK` → `other_income`
    - money in with `SETTLEMENT`, `PAYTM`, `BHARATPE`, `CASH DEP`, `UPI`, `POS` → `sales`
-3. **Model** (V3, planned). A scikit-learn classifier trained in `ml/` and exported to
-   `public/model.json`; the browser only predicts. Used when its probability is at least 0.8.
-   The hook is the optional `Classifier` argument of `enrich`/`categorize`.
+3. **Model** (V3). Character 3-5 gram TF-IDF on the cleaned narration plus direction, log amount,
+   day of month and payment rail, then one-vs-rest logistic regression (`class_weight='balanced'`).
+   Trained in `ml/`, exported to `public/model.json` (232 KB); the browser only predicts. Used when
+   its probability is at least 0.8. If the file can't be loaded, the app works on rules alone.
 4. **Needs review.** Nothing was confident. The row keeps a safe default (`sales` for money in,
    `other` for money out) so totals still add up, and is marked "Review" in the ledger with the
    model's top 2 suggestions when a model is loaded.
@@ -153,16 +178,42 @@ Money is shown in Indian format: `₹1,23,456`, short form `₹1.85L`.
 
 ## Tests
 
-`npm test` runs 284 tests covering every engine module, including: header not on line 1, merged
+`npm test` runs 357 tests covering every engine module, including: header not on line 1, merged
 header cells, every date format above, Dr/Cr single column, refunds and reversals, narrations with
 no payee, 1–2 months of history, a payee seen once, partial first/last month, no balance column,
 empty file, PDF upload, 5,000+ rows, Excel (`.xlsx` and `.xls`), and five bank layouts.
+`tests/engine/classifier.test.ts` checks that 50 inputs give the same model probabilities in
+TypeScript as in Python (to 1e-6). GitHub Actions runs all of this, the build and the Python feature
+tests on every push.
+
+**Classifier results** are in [docs/results.md](docs/results.md). They are synthetic validation only:
+`data/labels/` has no real rows yet, so there is no real-world score.
+
+**Forecast backtest** (`npm run eval:forecast`, [docs/forecast_results.md](docs/forecast_results.md)):
+given months 1-3, the forecast for months 4-6 is off by 9.6% for money in and 6.7% for money out
+on average, but it overstated the closing balance in 5 of 7 synthetic statements (see Findings there).
 
 ## Privacy
 
 Real statements never leave the browser and never go into Git (`data/real/` is gitignored).
 Rows saved to `data/labels/` must have account numbers, phone numbers, personal names and full
 VPAs removed first.
+
+## Roadmap: how this scales
+
+The engine is pure TypeScript with no browser dependencies, and the model is a versioned file, so
+each step below adds to the design instead of replacing it.
+
+| Next step | What it takes |
+|---|---|
+| **Real-world accuracy** | Hand-label a few hundred anonymized real rows into `data/labels/`; `evaluate.py` reports them |
+| **More banks** | A new anonymized fixture + test per bank; the parser already detects headers by name |
+| **Learning from owners** | Already wired: corrections export as CSV and `train.py` includes `data/corrections/` |
+| **PDF statements** | A PDF-to-rows step in front of `parse.ts` (today PDFs get a "download the Excel" message) |
+| **Regional languages** | UI text only; the engine and categories don't change |
+| **Mobile app** | Reuse `src/engine/` as-is in React Native or a PWA |
+| **Sync, multi-shop, accountant view** | An optional backend storing overrides and results, opt-in, so the privacy-first default stays |
+| **Smarter forecast** | Only if it beats the conservative baseline on held-out months (see [D9](docs/decisions.md)) |
 
 ## Tech
 

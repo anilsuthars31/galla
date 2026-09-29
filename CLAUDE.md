@@ -73,7 +73,9 @@ Canonical CSV: `date,narration,withdrawal,deposit,balance,category,source`
 - `source` is `synthetic` or `real`.
 
 Labelling rules (apply consistently, they matter for evaluation):
-- A reversal of a sale (money going back out) is a withdrawal. A refund received is a deposit, category `other_income`.
+- A reversal of a sale (money going back out) is a withdrawal, category `other` (money out never gets an income
+  category; decided 2026-09-29, see docs/decisions.md D7). The synthetic CSVs still say `sales` for these;
+  `ml/train.py` maps them to `other` at load time. A refund received is a deposit, category `other_income`.
 - A refund of a bank charge is a deposit, `other_income`.
 - ATM cash withdrawals are `other`, not `personal` (kirana owners often pay suppliers in cash).
 - The same payee can be a customer and a payee (e.g. `ramesh@upi` sends sales and receives rent). Category follows
@@ -117,6 +119,9 @@ Training happens in Python; the browser only predicts.
 - Always compare against baselines: majority class, rules only, model only, hybrid.
 - Forecast: train on months 1-3, predict 4-6, report MAPE for inflow and outflow.
 - `evaluate.py` writes `docs/results.md` with the date, dataset, row counts and the command that produced them.
+- Synthetic leave-one-file-out validation may be reported only when labelled "synthetic validation only, not a
+  real-world score". `data/synthetic/CHANGELOG.csv` and `hdfc_kirana_bengaluru_v1.csv` are excluded (D8).
+- Record new design decisions in `docs/decisions.md`; CI (`.github/workflows/ci.yml`) runs all tests on every push.
 
 ## Tests
 
