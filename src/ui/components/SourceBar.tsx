@@ -34,10 +34,14 @@ export function SourceBar({ source, analysis, count, review, onReview }: Props) 
         </>
       )}
       <span className="spacer" />
-      {review > 0 && (
+      {review > 0 ? (
         <button className="chip review-jump" onClick={onReview} title="Show the transactions that need you to pick a category">
           {review.toLocaleString('en-IN')} need review
         </button>
+      ) : (
+        <span className="chip static all-done" title="Every transaction got a category from your changes, a keyword rule or the model">
+          ✓ All categorised
+        </span>
       )}
       <span className="num">
         {formatDate(analysis.period.from)} – {formatDate(analysis.period.to)} · {count.toLocaleString('en-IN')} transactions

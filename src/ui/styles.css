@@ -1351,6 +1351,14 @@ select.field {
   background: var(--info-bg);
   color: var(--info);
 }
+.chip:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.chip.all-done {
+  color: var(--good);
+  border-color: color-mix(in srgb, var(--good) 40%, var(--line));
+}
 .chip.review-jump {
   border: 1px dashed var(--warn);
   background: var(--warn-bg);

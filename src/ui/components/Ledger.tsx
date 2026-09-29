@@ -108,11 +108,15 @@ export function Ledger({ ref, txns, filter, onFilter, onRecategorize, onExport, 
             ))}
           </optgroup>
         </select>
-        {reviewCount > 0 && (
-          <button className={`chip${filter.review ? ' on' : ''}`} aria-pressed={filter.review} onClick={() => set({ review: !filter.review })}>
-            Needs review · {reviewCount}
-          </button>
-        )}
+        <button
+          className={`chip${filter.review ? ' on' : ''}`}
+          aria-pressed={filter.review}
+          disabled={reviewCount === 0 && !filter.review}
+          title={reviewCount === 0 ? 'Nothing needs review: every transaction has a category' : 'Show only transactions that need a category'}
+          onClick={() => set({ review: !filter.review })}
+        >
+          Needs review · {reviewCount}
+        </button>
         {filter.month !== null && (
           <span className="fchip">
             {monthLabel(filter.month)}

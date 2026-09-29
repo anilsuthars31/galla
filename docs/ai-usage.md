@@ -72,6 +72,7 @@ training and waited for the reversal decision.
 | The first data check counted correct refunds as "wrong side" | Reading the report | Reported as a labelling question, not an error |
 | A row at 79.95% went to review but showed "80%" | Running a real statement through the app | Suggestions now round down |
 | An automated edit (`sed`) silently didn't change an import | The type-check failed | Fixed by hand |
+| On the live demo I couldn't find the "need review" button | I reported it; the AI drove headless Chrome against the live site: the button worked after an upload, but was *invisible* whenever nothing needed review (the sample data), so the feature looked missing | The top bar now always shows a status ("✓ All categorised" or "N need review") and the ledger filter is always visible |
 | Git Bash turned `/galla/` into a Windows path in a test build | Checking the built HTML | Only this shell; GitHub's Linux build is unaffected |
 | The Python and TypeScript features could drift apart | Designed against: parity test on 50 inputs, 1e-6 | Test passes; runs in CI |
 
