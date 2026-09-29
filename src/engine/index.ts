@@ -11,6 +11,7 @@ export { StatementError, MESSAGES, fileKind, isPdfBytes, parseAmount, parseDate,
 export { detectRail, extractPayee, payeeKey } from './narration';
 export { ruleCategory, RULES } from './rules';
 export { categorize, enrich, MODEL_THRESHOLD } from './categorize';
+export { loadClassifier, ModelFormatError, type LoadedClassifier } from './classifier';
 export { findRecurring } from './recurring';
 export { buildForecast } from './forecast';
 export { buildBudget } from './budget';
