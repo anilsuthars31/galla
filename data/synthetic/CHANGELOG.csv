@@ -1,0 +1,94 @@
+file,line,date,old_narration,new_narration,category
+01_stable_88_92_kirana_bengaluru.csv,10,2026-04-04,NEFT/LIFECARE P,UPI MERCH SET/447712782,sales
+01_stable_88_92_kirana_bengaluru.csv,173,2026-05-21,NEFT/METRO WH,UPI MERCH SET/261973069,sales
+01_stable_88_92_kirana_bengaluru.csv,240,2026-06-11,NEFT/METRO WH,UPI MERCH SET/523938499,sales
+01_stable_88_92_kirana_bengaluru.csv,304,2026-06-28,NEFT/SALON M,UPI MERCH SET/798935572,sales
+01_stable_88_92_kirana_bengaluru.csv,322,2026-07-04,NEFT/METRO WH,UPI MERCH SET/151847156,sales
+01_stable_88_92_kirana_bengaluru.csv,435,2026-08-06,NEFT/SHREE DIST,UPI MERCH SET/177777868,sales
+01_stable_88_92_kirana_bengaluru.csv,456,2026-08-12,NEFT/METRO WH,UPI MERCH SET/981836553,sales
+01_stable_88_92_kirana_bengaluru.csv,552,2026-09-08,NEFT/LIFECARE P,UPI MERCH SET/675398922,sales
+01_stable_88_92_kirana_bengaluru.csv,619,2026-09-27,NEFT/LIFECARE P,UPI/ZOMATO/ORDER,personal
+02_tight_93_97_pharmacy_pune.csv,41,2026-04-12,NEFT/METRO WH,UPI MERCH SET/492655486,sales
+02_tight_93_97_pharmacy_pune.csv,117,2026-05-04,NEFT/METRO WH,UPI MERCH SET/725763863,sales
+02_tight_93_97_pharmacy_pune.csv,129,2026-05-07,NEFT/LIFECARE P,SALARY/MANOJ S/UPI,salary
+02_tight_93_97_pharmacy_pune.csv,298,2026-06-25,NEFT/SHREE DIST,UPI MERCH SET/644854973,sales
+02_tight_93_97_pharmacy_pune.csv,316,2026-06-30,NEFT/METRO WH,UPI MERCH SET/330530419,sales
+02_tight_93_97_pharmacy_pune.csv,325,2026-07-02,NEFT/SALON M,UPI REVERSAL/140260662,sales
+02_tight_93_97_pharmacy_pune.csv,335,2026-07-06,NEFT/SHREE DIST,UPI MERCH SET/192285142,sales
+02_tight_93_97_pharmacy_pune.csv,409,2026-07-27,NEFT/METRO WH,UPI/SWIGGY/ORDER,personal
+02_tight_93_97_pharmacy_pune.csv,437,2026-08-05,NEFT/LIFECARE P,UPI MERCH SET/549008934,sales
+02_tight_93_97_pharmacy_pune.csv,550,2026-09-07,NEFT/SHREE DIST,UPI MERCH SET/175006691,sales
+02_tight_93_97_pharmacy_pune.csv,630,2026-09-30,NEFT/SALON M,UPI MERCH SET/358409929,sales
+03_growth_80_90_salon_hyderabad.csv,44,2026-04-13,NEFT/LIFECARE P,UPI MERCH SET/197402358,sales
+03_growth_80_90_salon_hyderabad.csv,81,2026-04-24,NEFT/SALON M,UPI MERCH SET/691682483,sales
+03_growth_80_90_salon_hyderabad.csv,91,2026-04-27,NEFT/LIFECARE P,UPI MERCH SET/555824009,sales
+03_growth_80_90_salon_hyderabad.csv,151,2026-05-14,NEFT/LIFECARE P,UPI MERCH SET/163469421,sales
+03_growth_80_90_salon_hyderabad.csv,191,2026-05-25,NEFT/METRO WH,UPI MERCH SET/987825707,sales
+03_growth_80_90_salon_hyderabad.csv,239,2026-06-09,NEFT/METRO WH,UPI MERCH SET/707151283,sales
+03_growth_80_90_salon_hyderabad.csv,248,2026-06-12,NEFT/LIFECARE P,UPI MERCH SET/232931336,sales
+03_growth_80_90_salon_hyderabad.csv,303,2026-06-28,NEFT/METRO WH,UPI MERCH SET/339701014,sales
+03_growth_80_90_salon_hyderabad.csv,312,2026-07-01,NEFT/LIFECARE P,UPI MERCH SET/777129422,sales
+03_growth_80_90_salon_hyderabad.csv,369,2026-07-17,NEFT/SHREE DIST,ATM CASH WDL,other
+03_growth_80_90_salon_hyderabad.csv,433,2026-08-06,NEFT/LIFECARE P,UPI MERCH SET/773701293,sales
+03_growth_80_90_salon_hyderabad.csv,473,2026-08-15,NEFT/METRO WH,UPI REVERSAL/725988156,sales
+03_growth_80_90_salon_hyderabad.csv,481,2026-08-18,NEFT/SALON M,UPI MERCH SET/166423868,sales
+03_growth_80_90_salon_hyderabad.csv,499,2026-08-23,NEFT/METRO WH,UPI MERCH SET/719659571,sales
+03_growth_80_90_salon_hyderabad.csv,553,2026-09-09,NEFT/METRO WH,UPI MERCH SET/728720317,sales
+04_one_loss_month_kirana_mysuru.csv,15,2026-04-05,NEFT/LIFECARE P,UPI/SWIGGY/ORDER,personal
+04_one_loss_month_kirana_mysuru.csv,40,2026-04-12,NEFT/SHREE DIST,UPI/ZOMATO/ORDER,personal
+04_one_loss_month_kirana_mysuru.csv,41,2026-04-13,NEFT/LIFECARE P,UPI REFUND/331821,other_income
+04_one_loss_month_kirana_mysuru.csv,61,2026-04-19,NEFT/METRO WH,UPI MERCH SET/150017772,sales
+04_one_loss_month_kirana_mysuru.csv,119,2026-05-06,NEFT/LIFECARE P,CHRG:SMS/AMB/TXN,charges
+04_one_loss_month_kirana_mysuru.csv,227,2026-06-06,NEFT/METRO WH,CHRG:SMS/AMB/TXN,charges
+04_one_loss_month_kirana_mysuru.csv,254,2026-06-15,NEFT/SHREE DIST,UPI MERCH SET/697714383,sales
+04_one_loss_month_kirana_mysuru.csv,327,2026-07-06,NEFT/SALON M,CHRG:SMS/AMB/TXN,charges
+04_one_loss_month_kirana_mysuru.csv,341,2026-07-11,NEFT/LIFECARE P,UPI MERCH SET/242995371,sales
+04_one_loss_month_kirana_mysuru.csv,363,2026-07-17,NEFT/SALON M,UPI MERCH SET/410965605,sales
+04_one_loss_month_kirana_mysuru.csv,457,2026-08-12,NEFT/METRO WH,UPI MERCH SET/550047120,sales
+04_one_loss_month_kirana_mysuru.csv,475,2026-08-16,NEFT/LIFECARE P,UPI MERCH SET/254892713,sales
+04_one_loss_month_kirana_mysuru.csv,509,2026-08-26,NEFT/METRO WH,CHRG:SMS/AMB/TXN,charges
+04_one_loss_month_kirana_mysuru.csv,513,2026-08-27,NEFT/SHREE DIST,UPI/FLIPKART,personal
+04_one_loss_month_kirana_mysuru.csv,522,2026-08-30,NEFT/SALON M,UPI MERCH SET/226478448,sales
+04_one_loss_month_kirana_mysuru.csv,587,2026-09-19,NEFT/SALON M,UPI MERCH SET/713013910,sales
+05_volatile_pharmacy_bengaluru.csv,84,2026-04-22,NEFT/METRO WH,UPI/SWIGGY/ORDER,personal
+05_volatile_pharmacy_bengaluru.csv,95,2026-04-26,NEFT/METRO WH,UPI MERCH SET/701571670,sales
+05_volatile_pharmacy_bengaluru.csv,177,2026-05-21,NEFT/METRO WH,UPI MERCH SET/976309003,sales
+05_volatile_pharmacy_bengaluru.csv,349,2026-07-10,NEFT/SHREE DIST,UPI MERCH SET/832294821,sales
+05_volatile_pharmacy_bengaluru.csv,412,2026-07-28,NEFT/SHREE DIST,UPI MERCH SET/294053474,sales
+05_volatile_pharmacy_bengaluru.csv,447,2026-08-09,NEFT/SHREE DIST,UPI MERCH SET/210655224,sales
+05_volatile_pharmacy_bengaluru.csv,454,2026-08-11,NEFT/LIFECARE P,UPI MERCH SET/724488420,sales
+05_volatile_pharmacy_bengaluru.csv,485,2026-08-19,NEFT/LIFECARE P,UPI MERCH SET/713326042,sales
+05_volatile_pharmacy_bengaluru.csv,554,2026-09-08,NEFT/LIFECARE P,UPI MERCH SET/786028113,sales
+05_volatile_pharmacy_bengaluru.csv,564,2026-09-11,NEFT/SALON M,UPI MERCH SET/301724977,sales
+05_volatile_pharmacy_bengaluru.csv,604,2026-09-22,NEFT/LIFECARE P,UPI MERCH SET/499858816,sales
+05_volatile_pharmacy_bengaluru.csv,607,2026-09-23,NEFT/SALON M,UPI MERCH SET/204615284,sales
+05_volatile_pharmacy_bengaluru.csv,608,2026-09-23,NEFT/SALON M,UPI MERCH SET/688136138,sales
+06_cashflow_pressure_salon_chennai.csv,22,2026-04-07,NEFT/SHREE DIST,UPI MERCH SET/864623112,sales
+06_cashflow_pressure_salon_chennai.csv,42,2026-04-12,NEFT/SHREE DIST,UPI MERCH SET/167419149,sales
+06_cashflow_pressure_salon_chennai.csv,49,2026-04-14,NEFT/LIFECARE P,UPI MERCH SET/705985840,sales
+06_cashflow_pressure_salon_chennai.csv,105,2026-04-30,NEFT/SALON M,UPI MERCH SET/163996269,sales
+06_cashflow_pressure_salon_chennai.csv,145,2026-05-12,NEFT/SALON M,UPI MERCH SET/764656492,sales
+06_cashflow_pressure_salon_chennai.csv,164,2026-05-17,NEFT/SALON M,ATM CASH WDL,other
+06_cashflow_pressure_salon_chennai.csv,279,2026-06-21,NEFT/METRO WH,UPI MERCH SET/321146487,sales
+06_cashflow_pressure_salon_chennai.csv,302,2026-06-27,NEFT/SHREE DIST,UPI MERCH SET/633021001,sales
+06_cashflow_pressure_salon_chennai.csv,332,2026-07-06,NEFT/SHREE DIST,UPI MERCH SET/830573909,sales
+06_cashflow_pressure_salon_chennai.csv,350,2026-07-11,NEFT/LIFECARE P,ELECTRICITY BILL,utilities
+06_cashflow_pressure_salon_chennai.csv,382,2026-07-20,NEFT/LIFECARE P,UPI MERCH SET/670930264,sales
+06_cashflow_pressure_salon_chennai.csv,504,2026-08-24,NEFT/METRO WH,UPI MERCH SET/559123743,sales
+06_cashflow_pressure_salon_chennai.csv,593,2026-09-20,NEFT/LIFECARE P,UPI MERCH SET/934543046,sales
+06_cashflow_pressure_salon_chennai.csv,619,2026-09-27,NEFT/LIFECARE P,UPI/SWIGGY/ORDER,personal
+07_mixed_realistic_kirana_hyderabad.csv,113,2026-05-04,NEFT/SALON M,UPI MERCH SET/599936196,sales
+07_mixed_realistic_kirana_hyderabad.csv,120,2026-05-06,NEFT/SALON M,UPI MERCH SET/728742260,sales
+07_mixed_realistic_kirana_hyderabad.csv,149,2026-05-14,NEFT/SALON M,UPI REVERSAL/586603020,sales
+07_mixed_realistic_kirana_hyderabad.csv,222,2026-06-04,NEFT/METRO WH,UPI MERCH SET/488246102,sales
+07_mixed_realistic_kirana_hyderabad.csv,232,2026-06-06,NEFT/LIFECARE P,CHRG:SMS/AMB/TXN,charges
+07_mixed_realistic_kirana_hyderabad.csv,241,2026-06-09,NEFT/SALON M,UPI MERCH SET/421872363,sales
+07_mixed_realistic_kirana_hyderabad.csv,272,2026-06-18,NEFT/SHREE DIST,UPI MERCH SET/366746013,sales
+07_mixed_realistic_kirana_hyderabad.csv,295,2026-06-24,NEFT/METRO WH,UPI MERCH SET/952958473,sales
+07_mixed_realistic_kirana_hyderabad.csv,343,2026-07-09,NEFT/LIFECARE P,UPI MERCH SET/293023078,sales
+07_mixed_realistic_kirana_hyderabad.csv,369,2026-07-16,NEFT/SHREE DIST,UPI REVERSAL/850539557,sales
+07_mixed_realistic_kirana_hyderabad.csv,427,2026-08-03,NEFT/LIFECARE P,UPI MERCH SET/937335688,sales
+07_mixed_realistic_kirana_hyderabad.csv,428,2026-08-03,NEFT/LIFECARE P,UPI MERCH SET/362096638,sales
+07_mixed_realistic_kirana_hyderabad.csv,437,2026-08-06,NEFT/SALON M,UPI MERCH SET/187891151,sales
+07_mixed_realistic_kirana_hyderabad.csv,443,2026-08-07,NEFT/SHREE DIST,SALARY/RAJESH K/UPI,salary
+07_mixed_realistic_kirana_hyderabad.csv,523,2026-08-30,NEFT/SHREE DIST,UPI MERCH SET/663925448,sales
