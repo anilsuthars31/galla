@@ -1,0 +1,9 @@
+Account Name :,SHOP ACCOUNT
+Account Number :,XXXXXXX1234
+Branch :,KOTHRUD
+,
+Txn Date,Value Date,Description,Ref No./Cheque No.,Debit,Credit,Balance
+1 Apr 2026,1 Apr 2026,BY TRANSFER-UPI/CR/610112345678/xxxx@okaxis/Payment,TRANSFER FROM 1234,,"1,250.00","1,01,250.00"
+2 Apr 2026,2 Apr 2026,TO TRANSFER-UPI/DR/610298765432/AGARWAL TRADERS/xxxx@okhdfcbank/Stock,TRANSFER TO 5678,"12,500.00",,"88,750.00"
+5 Apr 2026,5 Apr 2026,ATM WDL/ATM SBI KOTHRUD/123456,,"5,000.00",,"83,750.00"
+Totals,,,,"17,500.00","1,250.00",
