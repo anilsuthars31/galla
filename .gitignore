@@ -1,0 +1,10 @@
+node_modules/
+dist/
+.venv/
+__pycache__/
+.ipynb_checkpoints/
+data/real/*
+!data/real/.gitignore
+
+# starter archive (its contents are already in the repo)
+galla-starter.zip
