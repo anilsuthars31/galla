@@ -114,3 +114,58 @@ from the *higher* of the recent and whole-period averages, then re-run `npm run 
 
 **Why.** The owner knows their payees better than any model. The fix is instant for them and
 improves the model for everyone later.
+
+## D11. Multi-page app layout; 3D towers replaced by a 2D chart (2026-09-30)
+
+**Decision.** The single long dashboard became a sidebar app with six pages (Overview, Cash flow,
+Budget, Recurring, Transactions, Statement). The three.js "month towers" were removed and replaced by
+a 2D grouped bar chart (money in vs money out, forecast months hatched). Upload moved from the
+header to the Statement page; drag-and-drop still works anywhere.
+
+**Why.** Owner feedback: one page carried everything and felt crowded, and the 3D towers were hard to
+read. Bars you can compare side by side answer "did more go out than came in?" faster than a 3D scene.
+The per-category breakdown is still shown, in the month detail panel and "Where money went".
+Dropping three.js also removed the largest dependency and the WebGL fallback path.
+
+## D12. A small API for accounts and business profiles; statements stay in the browser (2026-09-30)
+
+**Decision.** Add `server/`: Node + Hono + TypeScript, PostgreSQL with Drizzle migrations, email and
+password accounts via better-auth. The server stores accounts, the business profile and payee rules.
+It never receives the bank statement or individual transactions; parsing and categorising stay in the
+browser.
+
+**Why.** The course requires a backend, and a business profile (employees, landlord, suppliers, loans)
+fixes the model's cold start: on the first upload Galla can already tell salary from supplier payments.
+Keeping transactions off the server keeps the original privacy promise and keeps the engine unchanged.
+
+**Details.**
+- *Bearer tokens, not cookies.* The web app (GitHub Pages) and the API are on different sites, where
+  browsers may block cookies. better-auth's bearer plugin returns the session token in a `set-auth-token`
+  header and the app sends it as `Authorization: Bearer`.
+- *PGlite for local dev and tests.* A real Postgres compiled to WebAssembly: no Docker to start, every
+  test file gets a fresh in-memory database. Production uses node-postgres against Neon. Same SQL,
+  same migrations.
+- *Auth is a library, not our code.* Password hashing, sessions and rate limits are better-auth's job.
+  Its telemetry is switched off explicitly.
+
+## D13. Setup asks about regular payees, stored as payee rules (2026-09-30)
+
+**Decision.** After sign-up the owner goes through three short steps: business (name, type, city,
+employees), people paid monthly (employees with salary and pay day, landlord), then suppliers, loans
+and bills. Each person or firm is saved as a *payee rule*: role (employee, landlord, supplier, lender,
+utility), name, typical amount, day of month and an optional UPI id. Each role maps to one category.
+Steps 2 and 3 can be skipped; everything is editable later on "Your business".
+
+**Why.** Before this, the first upload depended on keyword rules and the model guessing from text, and
+names like "SURESH PAWAR" gave it nothing to go on. The owner already knows who these people are; a
+2-minute form turns that into exact answers. Phase 3 matches these rules against transactions.
+
+**Details.**
+- *Guest mode stays.* "Try it with sample data" needs no account, so the demo works even if the API
+  is down and examiners can look without signing up.
+- *Business types and roles are defined once* in `src/engine/profile.ts`; the API validates against
+  the same lists.
+- *Found by the browser test, not the unit tests:* logout sent a POST without a body, which the auth
+  server rejects with 415 over real HTTP, so the session stayed valid. The client now sends `{}`, and
+  `server/tests/http.test.ts` runs requests over a real socket to catch this kind of difference.
+

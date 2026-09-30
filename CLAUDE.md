@@ -2,18 +2,21 @@
 
 Galla turns a small Indian business's bank statement (CSV/Excel) into categorized transactions,
 recurring payments, monthly budget limits, a 3-month cash forecast and plain-language alerts.
-BTech final project (solo). Everything runs in the browser; there is no backend.
+BTech final project (solo). Statements are parsed and categorised in the browser; a small API stores accounts
+and business profiles only (never transactions).
 
 The full design is in the project doc ("Galla — Project Doc"). This file is the working rules.
 
 ## Stack
 
 - Vite + React + TypeScript (strict mode)
-- 3D: three.js via @react-three/fiber + @react-three/drei
+- Charts: hand-written SVG (no chart library, no 3D; see docs/decisions.md D11)
 - Excel reading: SheetJS (`xlsx`)
 - Tests: Vitest
 - ML training: Python 3.11 + scikit-learn + pandas in `ml/` (training and evaluation only, never shipped)
-- Storage: localStorage only (owner category corrections). No server, no login, no analytics.
+- API (`server/`): Node + Hono + TypeScript, PostgreSQL via Drizzle (migrations in `server/drizzle/`),
+  auth via better-auth with Bearer tokens (D12). PGlite locally and in tests (no Docker); Neon Postgres in production.
+- No analytics or telemetry anywhere (better-auth telemetry is explicitly off).
 
 ## Commands
 
@@ -28,6 +31,12 @@ python -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\act
 pip install -r requirements.txt
 python train.py    # trains on data/synthetic + rule labels, evaluates on data/labels, writes public/model.json
 jupyter notebook   # notebooks/ for exploration, confusion matrix, charts for the report
+
+# API (from server/)
+npm install
+npm run dev          # http://localhost:8787, data in server/.data (PGlite)
+npm test             # API tests against an in-memory Postgres, must pass before any commit
+npm run db:generate  # after editing src/db/schema.ts: writes a new SQL migration (commit it)
 ```
 
 ## Layout
@@ -45,7 +54,10 @@ src/
     budget.ts          # per-category limits
     alerts.ts
     types.ts
+  engine/profile.ts    # business types + payee roles, shared with server/ (constants and types only)
+  api/                 # API client + setup-form helpers (payee rows -> create/update/delete plan)
   ui/                  # React components; read engine output, never re-implement logic
+    Root.tsx           # welcome/login -> setup -> app
 ml/                    # Python training + evaluation (not part of the web build)
   features.py          # narration cleaning + feature extraction; MUST match src/engine/classifier.ts exactly
   train.py             # train, evaluate, export public/model.json
@@ -58,6 +70,12 @@ data/
   synthetic/           # LLM-generated statements, source=synthetic
   real/                # GITIGNORED. Anonymized real statements, never committed
   labels/              # hand-labelled real rows used as the ONLY test set
+server/                # API (separate package.json)
+  src/app.ts           # Hono app factory: CORS, session lookup, routes, JSON errors
+  src/auth.ts          # better-auth config
+  src/db/              # schema.ts (Drizzle) + client.ts (pg in production, PGlite locally)
+  drizzle/             # generated SQL migrations, applied on startup
+  tests/               # API tests (each file gets its own in-memory database)
 tests/
   fixtures/            # small anonymized narration samples per bank
 ```
@@ -134,17 +152,25 @@ Training happens in Python; the browser only predicts.
 ## Privacy
 
 - Real statements never leave the browser and never go into Git. `data/real/` is gitignored.
+- The API never receives transactions or narrations. It may store: account, business profile, payee rules
+  (name, category, typical amount/day) and category corrections. Anything more needs a decision in docs/decisions.md.
+- API errors are JSON `{ error }` with a sentence a shop owner can act on; never a stack trace.
 - Before any real row is saved to `data/labels/`: remove account numbers, phone numbers, personal names of
   individuals and full VPAs (keep the handle suffix, e.g. `xxxx@okhdfcbank`).
 
 ## UI
 
-- Sections: summary cards, 3D month towers (inflow vs outflow stacked by category; forecast months translucent;
-  hover tooltip; click selects month; legend toggles categories), month detail panel, projected balance chart,
-  alerts, budget table, recurring payments, transaction ledger with per-payee category correction.
+- App shell: sidebar navigation (bottom tab bar under 860px) with hash-routed pages. One job per page:
+  - Overview: summary cards, cash-flow chart, upcoming payments, alerts, where money went.
+  - Cash flow: money in vs out chart (forecast hatched, hover tooltip, click selects month), month detail,
+    projected balance chart + forecast table.
+  - Budget, Recurring, Transactions (ledger with per-payee category correction), Statement (upload + sample).
+- Upload lives on the Statement page (and drag-and-drop anywhere), never in a page header.
 - Light and dark themes via CSS variables. Must work at 400px width. Respect `prefers-reduced-motion`.
-- If WebGL is unavailable, hide the 3D view and keep everything else working.
-- Load the built-in sample statement on first open, marked "Sample data".
+- First open shows the welcome page (sign up / log in) with "Try it with sample data" (guest mode, no account,
+  marked "Sample data"). After sign-up: 3-step setup (business, people, suppliers/loans/bills), skippable after
+  step 1. Profile is editable later on the "Your business" page (sidebar account link).
+- API calls go through `src/api/client.ts` only; it turns every failure into a sentence for the owner.
 
 ## Working style
 

@@ -1,11 +1,10 @@
 # Galla — cash planning from bank statements
 
 Galla turns a small Indian business's bank statement (CSV or Excel) into categorized transactions,
-recurring payments, monthly budget limits, a 3-month cash forecast and plain-language alerts,
-with a 3D month-by-month view of money in and out.
+recurring payments, monthly budget limits, a 3-month cash forecast and plain-language alerts.
 
-Everything runs in the browser. There is no backend, no login and no tracking: the statement never
-leaves the device. Only the owner's category corrections (and the theme) are saved, in `localStorage`.
+The statement is read and categorised in the browser and never leaves the device. A small API
+(`server/`) holds accounts and business profiles only; there is no tracking. Only the owner's category corrections (and the theme) are saved, in `localStorage`.
 
 BTech final project (solo), built with Claude Code for the "AI augmented software development" sprint.
 
@@ -22,16 +21,17 @@ BTech final project (solo), built with Claude Code for the "AI augmented softwar
 
 ## Features
 
-- **Upload** a CSV, XLS or XLSX statement by button or drag-and-drop. The built-in sample statement
-  (a fictional kirana store in Pune) loads on first open, marked "Sample data". PDFs get a friendly
-  message asking for the Excel download instead.
-- **Summary cards**: average money in and out, bank balance, next-3-months net, with sparklines.
-- **3D month towers** (three.js): money in vs money out stacked by category, forecast months as
-  glass. Bars grow on load, hover glows and shows a tooltip, clicking a tower or month flies the
-  camera to it, the legend hides/shows categories. Respects `prefers-reduced-motion`; falls back
-  to a 2D chart when WebGL is unavailable.
-- **Month detail** panel, **projected balance** chart and forecast table, **alerts**,
-  **budget** table and **recurring payments**.
+- **Accounts and setup**: sign up, then a 3-step setup (business, people you pay monthly, suppliers/loans/bills)
+  so salary, rent and EMIs are recognised from the first upload. Or try it as a guest with sample data.
+- **App layout**: a sidebar (bottom tab bar on phones) with six pages: Overview, Cash flow, Budget,
+  Recurring, Transactions and Statement. Pages are hash routes (`#/budget`), so back/forward and reload work.
+- **Overview**: summary cards with sparklines, a money-in vs money-out chart (forecast months hatched),
+  upcoming recurring payments, alerts, and where last month's money went.
+- **Cash flow**: the same chart with month selection, a month detail panel, the projected balance
+  chart and the forecast table.
+- **Statement**: upload a CSV, XLS or XLSX by button, or drop a file anywhere in the app. The built-in
+  sample statement (a fictional kirana store in Pune) loads on first open, marked "Sample data". PDFs
+  get a friendly message asking for the Excel download instead.
 - **Transaction ledger** with search and filters. Changing a category applies to every payment to
   that payee; "Export corrections" downloads the changes as CSV for the next model training run.
 - Light and dark themes, works down to 400px phone width.
@@ -48,7 +48,19 @@ npm run build      # type-check + production build into dist/
 npm run preview    # serve the production build
 ```
 
-Open `http://localhost:5173/?no3d` to see the fallback used when WebGL is unavailable.
+### API (accounts and business profiles)
+
+```bash
+cd server
+npm install
+npm run dev        # http://localhost:8787 — local data in server/.data (PGlite, no Docker needed)
+npm test           # API tests, each file on a fresh in-memory Postgres
+```
+
+The API stores accounts and business profiles only. Bank statements are still read in the browser and
+never sent to it ([D12](docs/decisions.md)). Environment variables (all optional locally):
+`DATABASE_URL` (a `postgres://` URL in production), `BETTER_AUTH_SECRET` (required in production),
+`BETTER_AUTH_URL`, `WEB_ORIGINS` (comma-separated), `PORT`.
 
 ### ML (training only, not part of the web build)
 
@@ -87,9 +99,10 @@ src/
     sample.ts        built-in sample statement (seeded, identical on every load)
     types.ts         shared types and the fixed category ids
   ui/                React components. They read engine output and never re-implement logic.
-    App.tsx          state: statement, owner overrides, selection, filters
-    city/CashCity.tsx  the 3D view (@react-three/fiber + drei + postprocessing), lazy-loaded
-    components/      summary cards, month detail, charts, alerts, budget, recurring, ledger
+    App.tsx          state: statement, owner overrides, selection, filters; renders the current page
+    route.ts         hash routing (#/overview, #/cashflow, ...)
+    pages/           Overview, CashFlow, Statement
+    components/      sidebar, summary cards, charts, month detail, alerts, budget, recurring, ledger
 tests/
   engine/            Vitest tests for every engine module
   fixtures/          anonymized bank-format samples (SBI, HDFC, ICICI, Axis, Kotak) + narrations
@@ -217,6 +230,6 @@ each step below adds to the design instead of replacing it.
 
 ## Tech
 
-Vite, React, TypeScript (strict), three.js with @react-three/fiber, drei and postprocessing,
-SheetJS for Excel, Vitest. Fonts (Manrope, JetBrains Mono, Unbounded) are bundled, so the page
+Vite, React, TypeScript (strict), SheetJS for Excel, Vitest. Charts are hand-written SVG.
+The font (Inter) is bundled, so the page
 makes no third-party requests.
