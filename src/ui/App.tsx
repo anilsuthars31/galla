@@ -31,12 +31,13 @@ import { CashFlow } from './pages/CashFlow';
 import { Statement } from './pages/Statement';
 import { Home, NoStatement } from './pages/Home';
 import { BusinessPage, type Profile } from './pages/BusinessPage';
-import { BudgetTable } from './components/BudgetTable';
+import { BudgetPlan } from './components/BudgetPlan';
 import { RecurringList } from './components/RecurringList';
 import { Ledger, type LedgerFilter } from './components/Ledger';
 import { Toast, type ToastMessage } from './components/Toast';
 import { WhoAreThese, type Answer } from './components/WhoAreThese';
 import { useOverrides } from './useOverrides';
+import { useBudgetLimits } from './useBudgetLimits';
 import { api, ApiError } from '../api/client';
 import { DropOverlay, useFileDrop } from './components/DropOverlay';
 
@@ -62,8 +63,8 @@ const TITLES: Record<Page, string> = {
 
 /** What each data page shows, for its "no statement yet" message. */
 const NEEDS_DATA: Partial<Record<Page, string>> = {
-  cashflow: 'money in and out month by month, and your 3-month forecast',
-  budget: 'your monthly budget',
+  cashflow: 'money in and out month by month, and next month’s forecast',
+  budget: 'a budget for next month, built from your history',
   recurring: 'your recurring payments',
   transactions: 'your transactions',
 };
@@ -113,6 +114,7 @@ export function App({ profile, onProfile, onLogOut, onSignIn, themePref: pref, o
     setToast({ id: Date.now(), message, action });
   }, []);
   const { overrides, set: setOverride, replace: replaceOverrides } = useOverrides(accountId, profile?.corrections, notify);
+  const { limits, setLimit } = useBudgetLimits(accountId, profile?.limits, notify);
 
   const [classifier, setClassifier] = useState<LoadedClassifier | null>(null);
   useEffect(() => {
@@ -125,8 +127,8 @@ export function App({ profile, onProfile, onLogOut, onSignIn, themePref: pref, o
 
   const payees = profile?.payees;
   const processed = useMemo(
-    () => (data ? processStatement(data.raw, overrides, classifier ?? undefined, payees ?? []) : null),
-    [data, overrides, classifier, payees],
+    () => (data ? processStatement(data.raw, overrides, classifier ?? undefined, payees ?? [], limits) : null),
+    [data, overrides, classifier, payees, limits],
   );
   const txns = processed?.txns ?? null;
   const analysis = processed?.analysis ?? null;
@@ -339,7 +341,7 @@ export function App({ profile, onProfile, onLogOut, onSignIn, themePref: pref, o
             {page === 'cashflow' && (
               <CashFlow analysis={analysis} months={months} selected={sel} onSelect={setSelected} onShowCategory={showInLedger} />
             )}
-            {page === 'budget' && <BudgetTable analysis={analysis} />}
+            {page === 'budget' && <BudgetPlan analysis={analysis} onSetLimit={setLimit} />}
             {page === 'recurring' && <RecurringList analysis={analysis} />}
             {page === 'transactions' && (
               <Ledger

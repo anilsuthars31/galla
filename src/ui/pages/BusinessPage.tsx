@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { BusinessProfile, PayeeRule } from '../../engine/profile';
-import type { Overrides } from '../../engine/types';
+import type { BudgetLimits, Overrides } from '../../engine/types';
 import { api, ApiError, type Account } from '../../api/client';
 import { toDraft, type PayeeDraft } from '../../api/payeeDraft';
 import { savePayees } from '../../api/savePayees';
@@ -14,6 +14,8 @@ export interface Profile {
   payees: PayeeRule[];
   /** Category corrections saved to the account, as loaded at sign-in (the app keeps the live copy). */
   corrections: Overrides;
+  /** The owner's own budget amounts, as loaded at sign-in. */
+  limits: BudgetLimits;
 }
 
 interface Props {

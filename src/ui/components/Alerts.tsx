@@ -40,7 +40,7 @@ export function Alerts({ alerts }: { alerts: Alert[] }) {
             </span>
             <div>
               <b>Nothing unusual</b>
-              <p>The next 3 months stay positive and spending is at its usual level.</p>
+              <p>Next month looks positive and spending is at its usual level.</p>
             </div>
           </div>
         )}

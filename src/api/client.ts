@@ -1,7 +1,7 @@
 /* Talking to the Galla API. Only the account, business profile and payees go over the network;
    the bank statement never does. The session token is kept in localStorage and sent as a Bearer header. */
 import type { BusinessProfile, PayeeInput, PayeeRule } from '../engine/profile';
-import type { CategoryId, Overrides } from '../engine/types';
+import type { BudgetLimits, CategoryId, ExpenseCategory, Overrides } from '../engine/types';
 
 /** Empty when this build has no API (then only the sample/guest mode is offered). */
 export const API_URL: string = (import.meta.env.VITE_API_URL ?? (import.meta.env.DEV ? 'http://localhost:8787' : '')).replace(/\/$/, '');
@@ -111,6 +111,9 @@ export const api = {
   setCorrection: (key: string, category: CategoryId) => request<unknown>(`/api/corrections/${encodeURIComponent(key)}`, json('PUT', { category })),
   deleteCorrection: (key: string) => request<void>(`/api/corrections/${encodeURIComponent(key)}`, { method: 'DELETE' }),
   clearCorrections: () => request<void>('/api/corrections', { method: 'DELETE' }),
+  budgetLimits: async () => (await request<{ limits: BudgetLimits }>('/api/budget')).limits,
+  setBudgetLimit: (category: ExpenseCategory, amount: number) => request<unknown>(`/api/budget/${category}`, json('PUT', { amount })),
+  resetBudgetLimit: (category: ExpenseCategory) => request<void>(`/api/budget/${category}`, { method: 'DELETE' }),
   importCorrections: async (corrections: Overrides) =>
     (await request<{ corrections: Overrides }>('/api/corrections/import', json('POST', { corrections }))).corrections,
 };

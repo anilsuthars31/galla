@@ -34,7 +34,7 @@ export function Overview({ analysis: a, months, onNavigate, onShowCategory, onOp
 
       <div className="grid-main">
         <section className="panel">
-          <CardHead title="Cash flow" sub="Money in and out each month, with the next 3 months forecast.">
+          <CardHead title="Cash flow" sub="Money in and out each month, with next month’s forecast.">
             <button className="link" onClick={() => onNavigate('cashflow')}>
               Details <Icon.arrowRight />
             </button>

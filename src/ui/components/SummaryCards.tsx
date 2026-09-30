@@ -15,8 +15,7 @@ interface Card {
 
 export function SummaryCards({ analysis: a, months }: { analysis: Analysis; months: MonthView[] }) {
   const firstForecast = months.findIndex((m) => m.forecast);
-  const net3 = a.forecast.reduce((s, f) => s + f.net, 0);
-  const worst = a.forecast.reduce((m, f) => (f.net < m.net ? f : m), a.forecast[0]!);
+  const next = a.forecast[0]!;
   const n = a.basisMonths.length;
 
   const cards: Card[] = [
@@ -42,12 +41,12 @@ export function SummaryCards({ analysis: a, months }: { analysis: Analysis; mont
       chart: a.hasBalance ? <Sparkline values={months.map((m) => m.endBalance)} forecastFrom={firstForecast} color="var(--accent)" /> : null,
     },
     {
-      label: 'Next 3 months · net',
-      value: signedInr(net3),
-      sub: worst.net < 0 ? `${monthLabel(worst.month)} runs ${inrShort(-worst.net)} short` : 'Every forecast month stays positive',
+      label: `${monthLabel(next.month)} · expected net`,
+      value: signedInr(next.net),
+      sub: `${inrShort(next.inflow)} in, ${inrShort(next.outflow)} out, if spending stays as usual`,
       icon: <Icon.calendar />,
-      chart: <NetBars values={a.forecast.map((f) => f.net)} />,
-      bad: worst.net < 0,
+      chart: <NetBars values={months.map((m) => m.inflow - m.outflow)} />,
+      bad: next.net < 0,
     },
   ];
 

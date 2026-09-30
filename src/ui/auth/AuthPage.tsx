@@ -54,14 +54,14 @@ export function AuthPage({ onAuthed, onGuest, notice, themePref, onTheme }: Prop
           <b>Galla</b>
         </div>
         <div className="auth-pitch">
-          <h1>Know your cash, three months ahead.</h1>
+          <h1>Know next month’s cash before it happens.</h1>
           <p>Upload your bank statement. Galla sorts every payment, finds your fixed costs and warns you before a tight month.</p>
           <ul>
             <li>
               <Icon.good /> Salary, rent, suppliers and EMIs sorted automatically
             </li>
             <li>
-              <Icon.good /> A 3-month forecast that errs on the safe side
+              <Icon.good /> Next month’s forecast and a budget built from your own history
             </li>
             <li>
               <Icon.shield /> Your statement is read on your device and never uploaded

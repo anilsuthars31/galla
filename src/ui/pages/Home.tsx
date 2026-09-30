@@ -36,7 +36,7 @@ export function Home({ profile, error, onCloseError, onFile, onNavigate }: Props
         <h1>Welcome to Galla, {firstName(profile.account.name)}</h1>
         <p>
           Galla reads your bank statement and turns it into a cash plan: where your money goes, which payments are fixed every month,
-          and whether the next three months look comfortable or tight. It works with the Excel or CSV statement you already get from
+          and whether next month looks comfortable or tight. It works with the Excel or CSV statement you already get from
           net banking.
         </p>
       </section>
@@ -51,7 +51,7 @@ export function Home({ profile, error, onCloseError, onFile, onNavigate }: Props
           Galla reads it on this device. Salary, rent, suppliers, EMIs and bills are sorted for you.
         </Step>
         <Step n={3} icon={<Icon.trend />} title="See your plan">
-          Monthly budget, recurring payments, a 3-month forecast and plain warnings before a tight month.
+          Next month’s forecast, a budget built from your history that you can change, and plain warnings before a tight month.
         </Step>
       </section>
 

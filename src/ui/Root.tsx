@@ -10,7 +10,7 @@ import { Onboarding } from './setup/Onboarding';
 import type { Profile } from './pages/BusinessPage';
 import type { Account } from '../api/client';
 import type { BusinessProfile, PayeeRule } from '../engine/profile';
-import type { Overrides } from '../engine/types';
+import type { BudgetLimits, Overrides } from '../engine/types';
 
 const GUEST_KEY = 'galla-guest';
 
@@ -23,7 +23,7 @@ type State =
   | { kind: 'loading' }
   | { kind: 'signedOut'; notice?: string }
   | { kind: 'guest' }
-  | { kind: 'setup'; account: Account; business: BusinessProfile | null; payees: PayeeRule[]; corrections: Overrides }
+  | { kind: 'setup'; account: Account; business: BusinessProfile | null; payees: PayeeRule[]; corrections: Overrides; limits: BudgetLimits }
   | { kind: 'ready'; profile: Profile };
 
 export function Root() {
@@ -37,12 +37,18 @@ export function Root() {
     }
     setState({ kind: 'loading' });
     try {
-      const [account, business, payees, corrections] = await Promise.all([api.me(), api.business(), api.payees(), api.corrections()]);
+      const [account, business, payees, corrections, limits] = await Promise.all([
+        api.me(),
+        api.business(),
+        api.payees(),
+        api.corrections(),
+        api.budgetLimits(),
+      ]);
       store.set(GUEST_KEY, false);
       setState(
         business?.setupComplete
-          ? { kind: 'ready', profile: { account, business, payees, corrections } }
-          : { kind: 'setup', account, business, payees, corrections },
+          ? { kind: 'ready', profile: { account, business, payees, corrections, limits } }
+          : { kind: 'setup', account, business, payees, corrections, limits },
       );
     } catch (e) {
       const offline = e instanceof ApiError && e.status === 0;
@@ -101,7 +107,7 @@ export function Root() {
           payees={state.payees}
           onLogOut={() => void logOut()}
           onDone={(business, payees) =>
-            setState({ kind: 'ready', profile: { account: state.account, business, payees, corrections: state.corrections } })
+            setState({ kind: 'ready', profile: { account: state.account, business, payees, corrections: state.corrections, limits: state.limits } })
           }
         />
       );
