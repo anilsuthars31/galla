@@ -1,5 +1,6 @@
 /* Keyword rules. A rule match is treated as certain (confidence 1.0). First match wins. */
 import type { CategoryId, Direction } from './types';
+import { BILLER_PATTERN } from './billers';
 
 export interface Rule {
   pattern: RegExp;
@@ -13,6 +14,9 @@ export interface Rule {
 export const RULES: readonly Rule[] = [
   { pattern: /CHRG|\bCHG\b|CHARGES|SMS ALERT|MIN BAL|\bAMC\b|QR RENTAL/, category: 'charges', direction: 'D' },
   { pattern: /\bGST\b|CPIN|GSTN|\bTDS\b|INCOME TAX|CBDT|ADV(ANCE)? TAX|CHALLAN 280/, category: 'tax', direction: 'D' },
+  // Electricity, water and gas boards across India (billers.ts). Before EMI, because many shops pay
+  // electricity by auto-debit ("NACH DR/TATA POWER"), which the EMI rule would otherwise take.
+  { pattern: BILLER_PATTERN, category: 'utilities', direction: 'D', added: true },
   { pattern: /NACH|\bACH\b|\bECS\b|\bEMI\b|LOAN|BAJAJ FIN|FINANCE LTD|LENDINGKART|CAPITAL FLOAT/, category: 'emi', direction: 'D' },
   { pattern: /\bRENT\b|LEASE/, category: 'rent', direction: 'D' },
   { pattern: /SALARY|\bSAL\b|WAGES|STAFF/, category: 'salary', direction: 'D' },
@@ -23,13 +27,6 @@ export const RULES: readonly Rule[] = [
   },
   // Home/shop broadband providers.
   { pattern: /FIBERNET|FIBRENET|FIBER NET|HATHWAY|EXCITEL/, category: 'utilities', direction: 'D', added: true },
-  // State electricity and water boards (Rajasthan's JDVVNL/AVVNL/JVVNL and PHED, and other states').
-  {
-    pattern: /JDVVNL|AVVNL|JVVNL|UPPCL|PSPCL|WBSEDCL|TSSPDCL|APSPDCL|APEPDCL|\bKSEB\b|\bCESC\b|DHBVN|UHBVN|TPCODL|MPPKVVCL|MPMKVVCL|\bPHED\b|JAL BOARD/,
-    category: 'utilities',
-    direction: 'D',
-    added: true,
-  },
   // Internet, Wi-Fi, DTH and phone bills ("BILL/INTERNET/..."). Not "INTERNET BANKING", which is a transfer.
   {
     pattern: /INTERNET(?! ?BANK)|\bWI-?FI\b|\bDTH\b|TATA ?PLAY|TATA ?SKY|DISH ?TV|POSTPAID|\bBILL(PAY)?\b.*\b(MOBILE|PHONE|CABLE)\b|\b(MOBILE|PHONE|CABLE)\b.*\bBILL\b/,

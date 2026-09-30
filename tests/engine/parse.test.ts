@@ -331,6 +331,40 @@ describe('errors for the shop owner', () => {
   });
 });
 
+describe('status column', () => {
+  // Owner file 2026-09-30: a failed ₹21,500 salary and a failed ₹12,750 EMI were counted as money spent.
+  const csv = [
+    'date,narration,withdrawal,deposit,balance,status',
+    '2026-09-10,UPI/SALARY/POOJA,21500,,100000,completed',
+    '2026-09-10,UPI/SALARY/POOJA,21500,,78500,failed',
+    '2026-09-12,UPI/SALARY/IRFAN,28900,,49600,pending',
+    '2026-09-14,EMI/ADITYA BIRLA,12750,,36850,FAILED',
+    '2026-09-15,UPI/CR/1/CUSTOMER,,5000,41850,Success',
+    '2026-09-16,UPI/DR/2/SUPPLIER,1000,,40850,Declined',
+    '2026-09-17,UPI/DR/3/SUPPLIER,1000,,39850,Cancelled',
+    '2026-09-18,UPI/DR/4/SUPPLIER,1000,,38850,Failure',
+    '2026-09-19,UPI/DR/5/SUPPLIER,1000,,37850,Rejected',
+  ].join('\n');
+
+  it('skips failed, declined, cancelled and rejected rows; keeps completed and pending', () => {
+    const rows = parseStatementText(csv);
+    expect(rows.map((r) => [r.narration, r.withdrawal || r.deposit])).toEqual([
+      ['UPI/SALARY/POOJA', 21500],
+      ['UPI/SALARY/IRFAN', 28900],
+      ['UPI/CR/1/CUSTOMER', 5000],
+    ]);
+  });
+
+  it('a file whose every row failed says so, rather than showing nothing', () => {
+    expect(() => parseStatementText('date,narration,withdrawal,deposit,status\n2026-09-10,X,100,,failed')).toThrow(StatementError);
+  });
+
+  it('a narration that mentions "failed" is not a status', () => {
+    const rows = parseStatementText('date,narration,withdrawal,deposit\n2026-09-10,REV FAILED TXN,,100');
+    expect(rows).toHaveLength(1);
+  });
+});
+
 describe('large files', () => {
   it('parses 6,000 rows quickly', () => {
     const lines = ['Date,Narration,Withdrawal,Deposit,Balance'];

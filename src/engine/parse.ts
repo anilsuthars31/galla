@@ -232,6 +232,8 @@ export interface ColumnMap {
   type: number;
   balance: number;
   balanceType: number;
+  /** Payment status (payment-app exports: success / pending / failed), or -1. */
+  status: number;
 }
 
 export function mapColumns(cols: readonly string[]): ColumnMap {
@@ -252,8 +254,12 @@ export function mapColumns(cols: readonly string[]): ColumnMap {
     type,
     balance,
     balanceType,
+    status: find(/^status$|^txn status|^transaction status|^payment status/),
   };
 }
+
+/** Statuses meaning the money never moved. "Reversed" is not here: banks show a reversal as its own row. */
+const FAILED = /^(failed|failure|declined|rejected|cancell?ed|unsuccessful)$/i;
 
 const text = (c: Cell) => (c == null ? '' : String(c)).replace(/\s+/g, ' ').trim();
 const isBlank = (c: Cell) => text(c) === '';
@@ -300,6 +306,7 @@ export function rowsToTxns(rows: readonly (readonly Cell[])[]): RawTxn[] {
       else withdrawal = a.value;
     }
     if (!withdrawal && !deposit) continue;
+    if (c.status >= 0 && FAILED.test(text(r[c.status]))) continue; // money never moved
     let balance: number | null = null;
     if (c.balance >= 0) {
       const b = readAmount(r[c.balance]);

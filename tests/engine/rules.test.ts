@@ -56,6 +56,39 @@ describe('ruleCategory', () => {
     expect(ruleCategory(n, 'D')).toBe('utilities');
   });
 
+  // Owner request 2026-09-30: recognise every state electricity board, water boards and LPG / piped gas.
+  it.each([
+    // electricity, by state
+    'BILL/AVVNL POWER', 'BILL/AVVNLPOWER', 'JDVVNL JODHPUR', 'JVVNL', // Rajasthan
+    'BSES RAJDHANI', 'BRPL/BILL', 'BYPL/BILL', 'TPDDL', 'NDMC ELECTRICITY', // Delhi
+    'UPPCL', 'PVVNL', 'MVVNL', 'DVVNL', 'PUVVNL', 'KESCO KANPUR', 'NPCL NOIDA', // Uttar Pradesh
+    'MSEDCL', 'MAHADISCOM', 'TATA POWER MUMBAI', 'ADANI ELECTRICITY', 'BEST ELECTRICITY BILL', // Maharashtra
+    'PGVCL', 'UGVCL', 'MGVCL', 'DGVCL', 'TORRENT POWER', // Gujarat
+    'MPPKVVCL', 'MPMKVVCL', 'MPPGVVCL', 'CSPDCL', // Madhya Pradesh, Chhattisgarh
+    'BESCOM', 'MESCOM', 'HESCOM', 'GESCOM', 'CHESCOM', 'KSEB', // Karnataka, Kerala
+    'TNEB', 'TANGEDCO', 'TNPDCL', // Tamil Nadu
+    'APSPDCL', 'APEPDCL', 'APCPDCL', 'TSSPDCL', 'TSNPDCL', 'TGSPDCL', 'TGNPDCL', // Andhra, Telangana
+    'WBSEDCL', 'CESC LTD', 'TPCODL', 'TPSODL', 'TPWODL', 'TPNODL', 'NBPDCL', 'SBPDCL', 'JBVNL', // East
+    'PSPCL', 'UHBVN', 'DHBVN', 'HPSEB', 'UPCL DEHRADUN', 'JKPDD', // North
+    'APDCL', 'MEPDCL', 'TSECL', 'MSPDCL', 'GOA ELECTRICITY DEPT', // North-east, Goa
+    'BIJLI BILL', 'LIGHT BILL', 'POWER BILL SEP',
+    // water
+    'BILL/JODHPUR WATER WORKS', 'DELHI JAL BOARD', 'UP JAL NIGAM', 'BWSSB', 'HMWSSB', 'CMWSSB', 'KWA WATER', 'BILL/PHED',
+    // LPG and piped gas
+    'BILL/RAJASTHAN LPG SERVICES', 'INDANE GAS', 'INDANE/BOOKING', 'HP GAS', 'HPGAS', 'BHARAT GAS', 'BHARATGAS', 'SHIV GAS AGENCY',
+    'NACH DR/TATA POWER/AUTOPAY', 'GAS CYLINDER REFILL', 'IGL PNG BILL', 'MGL', 'ADANI TOTAL GAS', 'GUJARAT GAS', 'GAIL GAS', 'TORRENT GAS', 'MNGL', 'PIPED GAS',
+  ])('bill %s is utilities', (n) => {
+    expect(ruleCategory(n, 'D')).toBe('utilities');
+  });
+
+  it.each([
+    ['NEFT/BEST PRICE WHOLESALE/1', 'suppliers'], // Walmart's Best Price is a supplier, not BEST electricity
+    ['UPI/DR/1/HPCL PETROL PUMP', null], // fuel, not LPG
+    ['UPI/DR/1/BHARAT TRADERS', 'suppliers'],
+  ])('%s is not mistaken for a bill', (n, cat) => {
+    expect(ruleCategory(n, 'D')).toBe(cat);
+  });
+
   it('internet banking is not an internet bill', () => {
     expect(ruleCategory('INTERNET BANKING TRF TO RAMESH', 'D')).toBeNull();
     expect(ruleCategory('INTERNETBANKING/IMPS/SUPPLIER', 'D')).not.toBe('utilities');

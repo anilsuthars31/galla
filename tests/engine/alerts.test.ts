@@ -105,7 +105,7 @@ describe('buildAlerts', () => {
         raw('2026-08-28', 'NEFT RENT/RAMESH GUPTA', -56000),
       ]);
       const a = buildAlerts(input({ txns: t })).find((x) => x.title.startsWith('Possible double payment'));
-      expect(a).toMatchObject({ level: 'warning', title: 'Possible double payment: Rent' });
+      expect(a).toMatchObject({ level: 'warning', title: 'Possible double payment: Ramesh Gupta' });
       expect(a!.body).toBe('₹56,000 was paid twice on 28 Sep. If one was a mistake, ask the bank or the payee to return it.');
     });
 

@@ -64,6 +64,34 @@ describe('extractPayee', () => {
   });
 });
 
+describe('payee after a payment-type word', () => {
+  // Bug report 2026-09-30 (restaurant, 10 employees): every UPI/SALARY/<NAME> became payee "Salary",
+  // so the ten employees merged into one and none showed as a recurring salary.
+  it.each([
+    ['UPI/SALARY/VIKAS', 'Vikas'],
+    ['UPI/SALARY/IRFAN KHAN', 'Irfan Khan'],
+    ['SALARY/RAJESH K/UPI', 'Rajesh K'],
+    ['NEFT/RENT/MAHESH CHAND', 'Mahesh Chand'],
+    ['NEFT RENT/RAMESH GUPTA', 'Ramesh Gupta'],
+    ['EMI/ADITYA BIRLA FINANCE', 'Aditya Birla Finance'],
+    ['SALARY RAJESH', 'Rajesh'],
+  ])('%s -> %s', (n, payee) => {
+    expect(extractPayee(n, detectRail(n))).toBe(payee);
+  });
+
+  it('keeps the words when nothing else names the payee', () => {
+    expect(extractPayee('NEFT/SHOP RENT/123456', 'NEFT')).toBe('Shop Rent');
+    expect(extractPayee('LOAN EMI/SHOP LOAN', 'Other')).toBe('Loan EMI'); // first one, as before
+    expect(extractPayee('LOAN EMI/', 'Other')).toBe('Loan EMI');
+  });
+
+  it('ten employees stay ten payees', () => {
+    const names = ['VIKAS', 'NEHA', 'DEEPAK', 'MEENA', 'TARUN', 'POOJA', 'IRFAN', 'KAVITA', 'LOKESH', 'SUNITA'];
+    const keys = new Set(names.map((n) => payeeKey(extractPayee(`UPI/SALARY/${n}`, 'UPI'), 'D')));
+    expect(keys.size).toBe(10);
+  });
+});
+
 describe('bill payments', () => {
   // Bug report 2026-09-30: every BILL/... narration became payee "Bill", so correcting the internet
   // bill would also move the electricity bill.

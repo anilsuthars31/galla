@@ -47,6 +47,7 @@ src/
     parse.ts           # CSV/Excel rows -> RawTxn[]; header detection, dates, amounts, Dr/Cr
     narration.ts       # rail detection (UPI/NEFT/IMPS/RTGS/NACH/ATM/charges) + payee extraction
     rules.ts           # keyword rules -> category (confidence 1.0)
+    billers.ts         # electricity / water / LPG / piped-gas companies across India, by state
     classifier.ts      # V3 inference only: loads public/model.json, rebuilds TF-IDF features, returns probabilities
     categorize.ts      # order: owner override > setup payee > rule > model (>= 0.8) > "needs review"
     profileMatch.ts    # matches withdrawals to setup payees (name, UPI id, usual amount)
@@ -151,7 +152,8 @@ Training happens in Python; the browser only predicts.
 - Every engine module has tests. Add a test for every bug fixed and every new bank format.
 - Edge cases that must stay covered: header not on line 1, merged header cells, all date formats above,
   Dr/Cr single column, refunds/reversals, narrations with no payee (`UPI/CR`, `POS SETTLE`), 1-2 months of
-  history, a payee seen once, partial first/last month, no balance column, empty file, PDF upload, 5,000+ rows.
+  history, a payee seen once, partial first/last month, no balance column, empty file, PDF upload, 5,000+ rows,
+  a status column (failed / declined / cancelled rows skipped, pending kept).
 - Fixtures use anonymized narrations only.
 
 ## Privacy

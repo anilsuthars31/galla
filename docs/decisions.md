@@ -255,3 +255,27 @@ alone explained ₹56,000 of the shortfall. After the fix the outlook is about �
 **Check.** This matches the forecast's own spec ("recurring payments at their usual amount"). For a
 payee paid once every month the number is unchanged, so the prototype parity test, the forecast
 backtest (docs/forecast_results.md) and the synthetic rule labels are all unchanged.
+
+## D18. Employees by name, every utility biller, and failed payments skipped (2026-09-30)
+
+**Decision.**
+- *Payee names.* A payment-type word before a name is not the payee: `UPI/SALARY/VIKAS` is "Vikas",
+  `NEFT/RENT/MAHESH CHAND` is "Mahesh Chand". A segment made only of such words ("SHOP RENT") is still
+  used when nothing else names the payee. Month names are not names ("RENT SHOP APRIL" stays as is),
+  and an initial after a name is kept ("RAJESH K"), so Rajesh K and Rajesh M stay two people.
+- *Utility billers.* `src/engine/billers.ts` lists the electricity boards of every state, water boards
+  and LPG / piped-gas companies, matched as whole words. The rule runs before the EMI rule, because
+  electricity is often paid by auto-debit ("NACH DR/TATA POWER").
+- *Status column.* When a statement has a status column (payment-app exports), rows marked failed,
+  declined, rejected or cancelled are skipped: the money never moved. Pending rows are kept; "reversed"
+  is not skipped because banks show a reversal as its own row.
+
+**Found by.** An owner's restaurant statement with 10 employees: all ten became one payee "Salary", so
+no salary showed as a recurring cost; LPG bills needed review; a failed ₹21,500 salary and a failed
+₹12,750 EMI were counted as spent. The 3-month outlook moved from −₹32,825 to −₹11,775 a month.
+
+**Checks.** The new rule changes no synthetic training label; the forecast backtest and the setup-payee
+evaluation are unchanged; the prototype parity test normalises the one intended naming difference and
+still requires identical grouping, forecast, budget and alerts. This is done with keyword rules, not by
+retraining the model: rules recognise a fixed list of company names every time, the model only guesses.
+

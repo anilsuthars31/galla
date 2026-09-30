@@ -87,7 +87,7 @@ describe('analyze: synthetic HDFC kirana CSV', () => {
 
   it('finds the monthly salary, electricity and internet payments', () => {
     const monthlyPayees = a.recurring.filter((r) => r.frequency === 'monthly').map((r) => r.payee);
-    expect(monthlyPayees).toEqual(expect.arrayContaining(['Salary Manoj', 'Bescom Electricity', 'Act Fibernet']));
+    expect(monthlyPayees).toEqual(expect.arrayContaining(['Manoj', 'Bescom Electricity', 'Act Fibernet']));
   });
 
   it('treats the same payee as a customer or a payee depending on direction (hard case)', () => {

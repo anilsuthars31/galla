@@ -21,6 +21,11 @@ export function detectRail(narration: string): Rail {
 const NOISE =
   /^(UPI|NEFT|IMPS|RTGS|NACH|ACH|ECS|DR|CR|P2A|P2M|P2P|MB|IB|INB|TO|BY|FROM|TRANSFER|TRF|PAYMENT|PAYMENT FROM PH|SUCCESS|REF|NA|N\/A|BILLDESK|BBPS|CHALLAN|INDIA|PVT|LTD)$/;
 
+/** Words that say what a payment is for, not who received it. */
+const PAYMENT_WORDS = /^(SALARY|SAL|WAGES|RENT|SHOP|EMI|LOAN)$/;
+/** Month names describe the period ("RENT SHOP APRIL"), they are not a payee either. */
+const MONTHS = /^(JAN|FEB|MAR|APR|MAY|JUNE?|JULY?|AUG|SEPT?|OCT|NOV|DEC|JANUARY|FEBRUARY|MARCH|APRIL|AUGUST|SEPTEMBER|OCTOBER|NOVEMBER|DECEMBER)$/;
+
 export function titleCase(s: string): string {
   return s
     .toLowerCase()
@@ -65,15 +70,23 @@ export function extractPayee(narration: string, rail: Rail): string {
     .split(/[/|:*-]+/)
     .map((p) => p.trim())
     .filter(Boolean);
+  // A segment made only of payment-type words ("SALARY", "SHOP RENT") names the payment, not the payee:
+  // prefer a later segment with a name (UPI/SALARY/VIKAS -> Vikas), and fall back to it only if none.
+  let typeOnly: string | null = null;
   for (const p of parts) {
     if (p.includes('@')) continue; // VPA, used only as a fallback below
-    const clean = p
+    // Single letters are dropped, except an initial right after a name ("RAJESH K"), so two employees
+    // called Rajesh K and Rajesh M stay two payees.
+    const words = p
       .split(/\s+/)
-      .filter((w) => w.length > 1 && !/\d/.test(w) && !NOISE.test(w))
-      .join(' ');
-    if (clean.replace(/\s/g, '').length < 3) continue;
-    return titleCase(clean.slice(0, 40));
+      .filter((w) => !/\d/.test(w) && !NOISE.test(w))
+      .filter((w, i, all) => w.length > 1 || (i > 0 && all[i - 1]!.length > 1 && !PAYMENT_WORDS.test(all[i - 1]!)));
+    if (words.join('').length < 3) continue;
+    const named = words.filter((w) => !PAYMENT_WORDS.test(w) && !MONTHS.test(w));
+    if (named.join('').length >= 3) return titleCase(named.join(' ').slice(0, 40));
+    typeOnly ??= words.join(' ');
   }
+  if (typeOnly) return titleCase(typeOnly.slice(0, 40));
   const vpa = s.match(/([A-Z0-9._-]+)@[A-Z]+/);
   if (vpa?.[1]) return vpa[1].toLowerCase();
   return UNNAMED[rail];
