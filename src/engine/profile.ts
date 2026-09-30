@@ -20,7 +20,7 @@ export const PAYEE_ROLES = {
   landlord: { label: 'Landlord', category: 'rent' },
   supplier: { label: 'Supplier', category: 'suppliers' },
   lender: { label: 'Loan / EMI', category: 'emi' },
-  utility: { label: 'Utility', category: 'utilities' },
+  utility: { label: 'Bill', category: 'utilities' },
 } as const satisfies Record<string, { label: string; category: ExpenseCategory }>;
 export type PayeeRole = keyof typeof PAYEE_ROLES;
 export const PAYEE_ROLE_IDS = Object.keys(PAYEE_ROLES) as PayeeRole[];

@@ -14,6 +14,7 @@ export { detectRail, extractPayee, payeeKey } from './narration';
 export { ruleCategory, RULES } from './rules';
 export { categorize, enrich, MODEL_THRESHOLD } from './categorize';
 export { buildProfileMatcher, type ProfileMatch, type ProfileMatcher } from './profileMatch';
+export { payeeCandidates, type PayeeCandidate } from './candidates';
 export { loadClassifier, ModelFormatError, type LoadedClassifier } from './classifier';
 export { findRecurring } from './recurring';
 export { buildForecast } from './forecast';
