@@ -2079,6 +2079,128 @@ select.field {
   border-top: 1px solid var(--line);
 }
 
+/* ---------- home (signed in, no statement yet) ---------- */
+.home-hero {
+  padding: 8px 0 4px;
+}
+.home-hero h1 {
+  font-size: clamp(24px, 3vw, 32px);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+  margin-top: 6px;
+}
+.home-hero p {
+  margin-top: 10px;
+  color: var(--muted);
+  font-size: 15px;
+  max-width: 70ch;
+}
+.steps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+.step {
+  display: grid;
+  gap: 6px;
+  align-content: start;
+  padding: 18px;
+  border-radius: var(--r);
+  background: var(--panel);
+  border: 1px solid var(--line);
+}
+.step b {
+  font-weight: 600;
+}
+.step p {
+  font-size: 13px;
+  color: var(--muted);
+}
+.step-ic {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  display: grid;
+  place-items: center;
+  margin-bottom: 4px;
+}
+.step-ic svg {
+  width: 17px;
+  height: 17px;
+}
+.home .panel h2 {
+  margin-bottom: 6px;
+}
+.home-p {
+  font-size: 13px;
+  margin-bottom: 12px;
+}
+.known {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 14px;
+  display: grid;
+  gap: 8px;
+}
+.known li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+}
+.known .sw {
+  border-radius: 50%;
+}
+.howto {
+  margin: 8px 0 0;
+  padding-left: 20px;
+  display: grid;
+  gap: 8px;
+  font-size: 13.5px;
+  color: var(--muted);
+}
+.howto b {
+  color: var(--ink);
+  font-weight: 600;
+}
+.home-privacy {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: 13px;
+  color: var(--faint);
+}
+.home-privacy svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+}
+.empty-state {
+  display: grid;
+  justify-items: center;
+  text-align: center;
+  gap: 8px;
+  padding: 48px 24px;
+}
+.empty-state h2 {
+  font-size: 17px;
+}
+.empty-state .btn {
+  margin-top: 8px;
+}
+.src-dot.none {
+  background: var(--faint);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--faint) 20%, transparent);
+}
+@container (max-width: 700px) {
+  .steps {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 @media (max-width: 860px) {
   .auth {
     grid-template-columns: minmax(0, 1fr);

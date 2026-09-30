@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api, ApiError, hasToken } from '../api/client';
 import { store } from './storage';
+import { savedStatement } from './savedStatement';
 import { useTheme } from './theme';
 import { App } from './App';
 import { AuthPage } from './auth/AuthPage';
@@ -52,6 +53,10 @@ export function Root() {
   }, [load]);
 
   const logOut = async () => {
+    // The statement is remembered per account on this device; logging out removes it (shared computers).
+    if (state.kind === 'ready' || state.kind === 'setup') {
+      savedStatement.clear(state.kind === 'ready' ? state.profile.account.id : state.account.id);
+    }
     await api.logOut().catch(() => undefined);
     store.set(GUEST_KEY, false);
     setState({ kind: 'signedOut' });

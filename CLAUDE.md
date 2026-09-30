@@ -152,6 +152,9 @@ Training happens in Python; the browser only predicts.
 ## Privacy
 
 - Real statements never leave the browser and never go into Git. `data/real/` is gitignored.
+- The owner's last statement is remembered in this browser's localStorage, one per account
+  (`src/ui/savedStatement.ts`), so they don't re-upload every visit. Logging out and "Remove from this
+  device" delete it. Category corrections are also kept per account.
 - The API never receives transactions or narrations. It may store: account, business profile, payee rules
   (name, category, typical amount/day) and category corrections. Anything more needs a decision in docs/decisions.md.
 - API errors are JSON `{ error }` with a sentence a shop owner can act on; never a stack trace.
@@ -170,6 +173,8 @@ Training happens in Python; the browser only predicts.
 - First open shows the welcome page (sign up / log in) with "Try it with sample data" (guest mode, no account,
   marked "Sample data"). After sign-up: 3-step setup (business, people, suppliers/loans/bills), skippable after
   step 1. Profile is editable later on the "Your business" page (sidebar account link).
+- Signed-in owners never see the sample. Until they upload, Overview is a home page (who Galla is, how it
+  works, upload) and the other data pages show "No statement yet". Sample data is for guests only.
 - API calls go through `src/api/client.ts` only; it turns every failure into a sentence for the owner.
 
 ## Working style

@@ -6,31 +6,32 @@ import { Icon } from '../components/Icons';
 const ACCEPT =
   '.csv,.xls,.xlsx,.xlsm,.txt,.pdf,text/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
 
-interface Props {
-  source: Source;
-  analysis: Analysis;
-  count: number;
+/** Drop zone + file picker + the "couldn't use that file" message. Used on Home and Statement. */
+export function UploadCard({
+  title = 'Drop your bank statement here',
+  error,
+  onCloseError,
+  onFile,
+}: {
+  title?: string;
   error: string | null;
   onCloseError: () => void;
   onFile: (f: File) => void;
-  onSample: () => void;
-}
-
-export function Statement({ source, analysis, count, error, onCloseError, onFile, onSample }: Props) {
+}) {
   const input = useRef<HTMLInputElement>(null);
   return (
-    <div className="page">
+    <>
       <section className="dropzone">
         <span className="dz-icon">
           <Icon.upload />
         </span>
-        <h2>Drop your bank statement here</h2>
-        <p>CSV, XLS or XLSX downloaded from net banking. You can also drop a file anywhere in the app.</p>
+        <h2>{title}</h2>
+        <p>Excel (XLS, XLSX) or CSV downloaded from net banking. You can also drop the file anywhere on this page.</p>
         <button className="btn primary" onClick={() => input.current?.click()}>
           Choose a file
         </button>
         <span className="dz-note">
-          <Icon.lock /> Read in this browser. Never uploaded.
+          <Icon.lock /> Read on this device. Your statement is never uploaded to our server.
         </span>
         <input
           ref={input}
@@ -57,28 +58,57 @@ export function Statement({ source, analysis, count, error, onCloseError, onFile
           </button>
         </div>
       )}
+    </>
+  );
+}
 
-      <section className="panel current">
-        <span className={`src-dot${source.kind === 'sample' ? ' sample' : ''}`} />
-        <div className="grow">
-          <span className="eyebrow">{source.kind === 'sample' ? 'Showing sample data' : 'Showing your statement'}</span>
-          <b>{source.name}</b>
-          <span className="muted">
-            {formatDate(analysis.period.from)} – {formatDate(analysis.period.to)} · {count.toLocaleString('en-IN')} transactions
-          </span>
-        </div>
-        {source.kind === 'file' && (
-          <button className="btn sm" onClick={onSample}>
-            <Icon.sample />
-            Load sample instead
-          </button>
-        )}
-      </section>
+interface Props {
+  /** Null when no statement is loaded yet. */
+  current: { source: Source; analysis: Analysis; count: number } | null;
+  error: string | null;
+  onCloseError: () => void;
+  onFile: (f: File) => void;
+  /** Guests only: go back to the sample statement. */
+  onSample?: () => void;
+  /** Account holders only: forget the remembered statement on this device. */
+  onForget?: () => void;
+}
+
+export function Statement({ current, error, onCloseError, onFile, onSample, onForget }: Props) {
+  return (
+    <div className="page">
+      <UploadCard title={current ? 'Upload a newer statement' : undefined} error={error} onCloseError={onCloseError} onFile={onFile} />
+
+      {current && (
+        <section className="panel current">
+          <span className={`src-dot${current.source.kind === 'sample' ? ' sample' : ''}`} />
+          <div className="grow">
+            <span className="eyebrow">{current.source.kind === 'sample' ? 'Showing sample data' : 'Showing your statement'}</span>
+            <b>{current.source.name}</b>
+            <span className="muted">
+              {formatDate(current.analysis.period.from)} – {formatDate(current.analysis.period.to)} · {current.count.toLocaleString('en-IN')} transactions
+              {onForget && ' · remembered on this device'}
+            </span>
+          </div>
+          {onSample && current.source.kind === 'file' && (
+            <button className="btn sm" onClick={onSample}>
+              <Icon.sample />
+              Load sample instead
+            </button>
+          )}
+          {onForget && (
+            <button className="btn sm" onClick={onForget}>
+              <Icon.x />
+              Remove from this device
+            </button>
+          )}
+        </section>
+      )}
 
       <div className="grid-three">
         <InfoCard icon={<Icon.shield />} title="Your data stays here">
-          The statement is read in this browser and is never uploaded. There is no account and no tracking. Only your category choices
-          are remembered, on this device.
+          The statement is read on this device and never sent to Galla’s server. Your account only holds your business details and the
+          people you pay. Logging out removes the statement from this device.
         </InfoCard>
         <InfoCard icon={<Icon.file />} title="Supported files">
           CSV or Excel exports from net banking with date, narration, withdrawal and deposit columns (or one amount column with Dr/Cr),

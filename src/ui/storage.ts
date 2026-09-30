@@ -1,5 +1,6 @@
 /* localStorage wrapper. Storage can be missing or blocked (private mode), so every call is guarded
-   and the app works without it. Only owner corrections and the theme are stored. */
+   and the app works without it. Stored: the theme, owner corrections and the owner's last statement
+   (per account, see savedStatement.ts). */
 export const store = {
   get<T>(key: string): T | null {
     try {
@@ -13,7 +14,14 @@ export const store = {
     try {
       window.localStorage.setItem(key, JSON.stringify(value));
     } catch {
-      /* storage unavailable: the change still applies for this visit */
+      /* storage unavailable or full: the change still applies for this visit */
+    }
+  },
+  remove(key: string): void {
+    try {
+      window.localStorage.removeItem(key);
+    } catch {
+      /* nothing to remove */
     }
   },
 };

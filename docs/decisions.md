@@ -169,3 +169,21 @@ names like "SURESH PAWAR" gave it nothing to go on. The owner already knows who 
   server rejects with 415 over real HTTP, so the session stayed valid. The client now sends `{}`, and
   `server/tests/http.test.ts` runs requests over a real socket to catch this kind of difference.
 
+## D14. Signed-in owners start on a home page; their statement is remembered on the device (2026-09-30)
+
+**Decision.** A signed-in owner never sees the fictional sample shop. Until they upload a statement,
+Overview is a home page (what Galla does, three steps, what it already knows from setup, how to download
+a statement, the upload box) and Cash flow, Budget, Recurring and Transactions say "No statement yet".
+The sample stays for guests ("Try it with sample data" before signing up).
+
+Once uploaded, the parsed statement is kept in this browser's localStorage under the owner's account id,
+so opening Galla again shows their dashboard. Logging out, or "Remove from this device" on the Statement
+page, deletes it. Category corrections are stored per account too (guests keep the old key).
+
+**Why.** Owner feedback: after creating an account they landed on someone else's (sample) numbers, which
+is confusing. And with accounts, asking for a re-upload on every visit would make the product feel broken.
+
+**Privacy.** The statement still never reaches the server. Keeping it in the browser is the same trust
+level as reading it there; clearing it on logout covers shared computers. A saved statement is validated
+on load and ignored if it is not well-formed.
+

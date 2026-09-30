@@ -31,7 +31,8 @@ const THEME_LABEL: Record<ThemePref, string> = {
 interface Props {
   page: Page;
   onNavigate: (p: Page) => void;
-  source: Source;
+  /** Null until a statement is loaded. */
+  source: Source | null;
   review: number;
   themePref: ThemePref;
   onTheme: () => void;
@@ -94,16 +95,16 @@ export function Sidebar({ page, onNavigate, source, review, themePref, onTheme, 
 
       <div className="side-foot">
         <div className="src-card">
-          <span className={`src-dot${source.kind === 'sample' ? ' sample' : ''}`} />
+          <span className={`src-dot${!source ? ' none' : source.kind === 'sample' ? ' sample' : ''}`} />
           <div>
-            <span className="eyebrow">{source.kind === 'sample' ? 'Sample data' : 'Your statement'}</span>
-            <b title={source.name}>{source.name}</b>
+            <span className="eyebrow">{!source ? 'No statement yet' : source.kind === 'sample' ? 'Sample data' : 'Your statement'}</span>
+            <b title={source?.name}>{source?.name ?? 'Upload one to get started'}</b>
           </div>
         </div>
         <div className="side-actions">
-          <button className="btn sm grow" onClick={() => onNavigate('statement')}>
+          <button className="btn sm grow" onClick={() => onNavigate(source ? 'statement' : 'overview')}>
             <Icon.upload />
-            {source.kind === 'sample' ? 'Use my statement' : 'Replace file'}
+            {!source ? 'Upload statement' : source.kind === 'sample' ? 'Use my statement' : 'Replace file'}
           </button>
           <ThemeButton pref={themePref} onTheme={onTheme} />
         </div>
