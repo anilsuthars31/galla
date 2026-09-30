@@ -4,10 +4,10 @@ import { Hono, type Context } from 'hono';
 import { HTTPException } from 'hono/http-exception';
 import { z } from 'zod';
 import { BUSINESS_TYPE_IDS, LIMITS, PAYEE_ROLE_IDS, type BusinessProfile, type PayeeRule } from '../../../src/engine/profile';
-import { ALL_CATEGORIES, isIncomeCategory, type CategoryId } from '../../../src/engine/types';
+import { ALL_CATEGORIES, EXPENSE_CATEGORIES, isIncomeCategory, type CategoryId, type ExpenseCategory } from '../../../src/engine/types';
 import type { AppVars } from '../app';
 import type { Db } from '../db/client';
-import { business, correction, payee } from '../db/schema';
+import { budgetLimit, business, correction, payee } from '../db/schema';
 
 const text = (max: number, what: string) =>
   z
@@ -78,6 +78,22 @@ function checkDirection(key: string, category: CategoryId) {
       message: moneyIn ? 'Money coming in can only be sales or other income.' : 'Money going out can’t be sales or other income.',
     });
   }
+}
+
+/* Budget: the owner's own monthly amount per spending category (D19). */
+const budgetBody = z.object({
+  amount: z
+    .number({ error: 'Budget must be a number.' })
+    .int('Budget must be in whole rupees.')
+    .min(0, "Budget can't be negative.")
+    .max(LIMITS.amountMax, 'That budget looks too large.'),
+});
+
+function checkExpenseCategory(c: string): ExpenseCategory {
+  if (!(EXPENSE_CATEGORIES as readonly string[]).includes(c)) {
+    throw new HTTPException(400, { message: 'A budget can only be set for a spending category.' });
+  }
+  return c as ExpenseCategory;
 }
 
 /** Parses a JSON body; any problem becomes a 400 with the first message a person can act on. */
@@ -245,6 +261,34 @@ export function profileRoutes(db: Db) {
   r.delete('/corrections', async (c) => {
     const b = await requireBusiness(requireUser(c).id);
     await db.delete(correction).where(eq(correction.businessId, b.id));
+    return c.body(null, 204);
+  });
+
+  /* ---------- budget (the owner's own amounts; suggestions come from the statement) ---------- */
+
+  r.get('/budget', async (c) => {
+    const b = await findBusiness(requireUser(c).id);
+    if (!b) return c.json({ limits: {} });
+    const rows = await db.select().from(budgetLimit).where(eq(budgetLimit.businessId, b.id));
+    return c.json({ limits: Object.fromEntries(rows.map((x) => [x.category, x.amount])) });
+  });
+
+  r.put('/budget/:category', async (c) => {
+    const b = await requireBusiness(requireUser(c).id);
+    const category = checkExpenseCategory(c.req.param('category'));
+    const { amount } = await body(c, budgetBody);
+    await db
+      .insert(budgetLimit)
+      .values({ businessId: b.id, category, amount })
+      .onConflictDoUpdate({ target: [budgetLimit.businessId, budgetLimit.category], set: { amount, updatedAt: new Date() } });
+    return c.json({ category, amount });
+  });
+
+  /** Back to Galla's suggestion for this category. */
+  r.delete('/budget/:category', async (c) => {
+    const b = await requireBusiness(requireUser(c).id);
+    const category = checkExpenseCategory(c.req.param('category'));
+    await db.delete(budgetLimit).where(and(eq(budgetLimit.businessId, b.id), eq(budgetLimit.category, category)));
     return c.body(null, 204);
   });
 

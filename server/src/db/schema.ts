@@ -135,3 +135,17 @@ export const correction = pgTable(
   },
   (t) => [primaryKey({ columns: [t.businessId, t.payeeKey] })],
 );
+
+/** The owner's own monthly budget for a category, where they changed Galla's suggestion (D19). */
+export const budgetLimit = pgTable(
+  'budget_limit',
+  {
+    businessId: text('business_id')
+      .notNull()
+      .references(() => business.id, { onDelete: 'cascade' }),
+    category: text('category').$type<CategoryId>().notNull(),
+    amount: integer('amount').notNull(),
+    updatedAt: updated(),
+  },
+  (t) => [primaryKey({ columns: [t.businessId, t.category] }), check('budget_amount_range', sql`${t.amount} >= 0`)],
+);
