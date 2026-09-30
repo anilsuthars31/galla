@@ -139,6 +139,44 @@ describe('configuration', () => {
     expect(() => loadEnv({ NODE_ENV: 'production', DATABASE_URL: 'postgres://x' })).toThrow(/BETTER_AUTH_SECRET/);
   });
 
+  const PROD = { NODE_ENV: 'production', DATABASE_URL: 'postgresql://u:p@host.neon.tech/db?sslmode=require', BETTER_AUTH_SECRET: 'x'.repeat(40) };
+
+  it('production starts with valid settings', () => {
+    const env = loadEnv({ ...PROD, BETTER_AUTH_URL: 'https://galla-api.onrender.com', WEB_ORIGINS: 'https://anilsuthars31.github.io' });
+    expect(env.BETTER_AUTH_URL).toBe('https://galla-api.onrender.com');
+  });
+
+  // Render deploy 2026-09-30 failed with a bare "Invalid URL" for BETTER_AUTH_URL.
+  it('a BETTER_AUTH_URL without https:// fails with an example of the right value', () => {
+    expect(() => loadEnv({ ...PROD, BETTER_AUTH_URL: 'galla-api.onrender.com' })).toThrow(
+      'BETTER_AUTH_URL must be a full address starting with https://, e.g. https://galla-api.onrender.com',
+    );
+  });
+
+  it('falls back to the URL Render provides when BETTER_AUTH_URL is not set', () => {
+    expect(loadEnv({ ...PROD, RENDER_EXTERNAL_URL: 'https://galla-api-x1.onrender.com' }).BETTER_AUTH_URL).toBe('https://galla-api-x1.onrender.com');
+    expect(loadEnv({ ...PROD, BETTER_AUTH_URL: '  ', RENDER_EXTERNAL_URL: 'https://galla-api-x1.onrender.com' }).BETTER_AUTH_URL).toBe(
+      'https://galla-api-x1.onrender.com',
+    );
+  });
+
+  it('trims stray spaces around values pasted into a dashboard', () => {
+    expect(loadEnv({ ...PROD, BETTER_AUTH_URL: ' https://galla-api.onrender.com ' }).BETTER_AUTH_URL).toBe('https://galla-api.onrender.com');
+  });
+
+  it('reduces web addresses to their origin (a path would never match the browser Origin header)', () => {
+    const env = loadEnv({ WEB_ORIGINS: 'https://anilsuthars31.github.io/galla/, https://anilsuthars31.github.io' });
+    expect(env.WEB_ORIGINS).toEqual(['https://anilsuthars31.github.io']);
+  });
+
+  it('rejects a web address without https://', () => {
+    expect(() => loadEnv({ WEB_ORIGINS: 'anilsuthars31.github.io' })).toThrow(/WEB_ORIGINS entry must be a full address/);
+  });
+
+  it('production refuses to run without a Postgres DATABASE_URL', () => {
+    expect(() => loadEnv({ ...PROD, DATABASE_URL: undefined })).toThrow(/DATABASE_URL must be a postgres:\/\/ connection string/);
+  });
+
   it('reads a comma-separated origin list', () => {
     const env = loadEnv({ WEB_ORIGINS: 'https://a.example, https://b.example' });
     expect(env.WEB_ORIGINS).toEqual(['https://a.example', 'https://b.example']);

@@ -60,7 +60,9 @@ npm test           # API tests, each file on a fresh in-memory Postgres
 The API stores accounts and business profiles only. Bank statements are still read in the browser and
 never sent to it ([D12](docs/decisions.md)). Environment variables (all optional locally):
 `DATABASE_URL` (a `postgres://` URL in production), `BETTER_AUTH_SECRET` (required in production),
-`BETTER_AUTH_URL`, `WEB_ORIGINS` (comma-separated), `PORT`.
+`BETTER_AUTH_URL` (the API's own https:// address; on Render it defaults to `RENDER_EXTERNAL_URL`),
+`WEB_ORIGINS` (comma-separated web app addresses; any path is dropped), `PORT`. A wrong value stops the
+server at startup with a message saying what to put there.
 
 ### ML (training only, not part of the web build)
 
