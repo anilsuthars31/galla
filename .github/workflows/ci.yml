@@ -1,4 +1,4 @@
-# Runs on every push and pull request: app tests, type-check + build, and the Python feature tests.
+# Runs on every push and pull request: app tests, type-check + build, API tests, and the Python feature tests.
 name: CI
 
 on:
@@ -18,6 +18,25 @@ jobs:
       - run: npm ci
       - run: npm test
       - run: npm run build
+
+  server:
+    name: API tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: server
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: server/package-lock.json
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      # Fails if the schema changed but no migration was generated for it.
+      - run: npx drizzle-kit generate --name ci-check && git diff --exit-code --stat -- drizzle && test -z "$(git status --porcelain -- drizzle)"
 
   ml:
     name: ML feature tests

@@ -7,6 +7,7 @@ import { analyze } from './analyze';
 export * from './types';
 export * from './months';
 export * from './format';
+export * from './profile';
 export { StatementError, MESSAGES, fileKind, isPdfBytes, parseAmount, parseDate, parseCSV, rowsToTxns, parseStatementText, friendlyError } from './parse';
 export { detectRail, extractPayee, payeeKey } from './narration';
 export { ruleCategory, RULES } from './rules';
