@@ -25,21 +25,21 @@ export function SummaryCards({ analysis: a, months }: { analysis: Analysis; mont
       value: inr(a.avgInflow),
       sub: `Across ${n} full month${n === 1 ? '' : 's'}`,
       icon: <Icon.arrowIn />,
-      chart: <Sparkline values={months.map((m) => m.inflow)} forecastFrom={firstForecast} color="var(--good)" />,
+      chart: <Sparkline values={months.map((m) => m.inflow)} forecastFrom={firstForecast} color="var(--money-in)" />,
     },
     {
       label: 'Money out · monthly avg',
       value: inr(a.avgOutflow),
       sub: a.fixedMonthly ? `${inrShort(a.fixedMonthly)} of it is fixed payments` : 'No fixed payments found yet',
       icon: <Icon.arrowOut />,
-      chart: <Sparkline values={months.map((m) => m.outflow)} forecastFrom={firstForecast} color="var(--s2)" />,
+      chart: <Sparkline values={months.map((m) => m.outflow)} forecastFrom={firstForecast} color="var(--money-out)" />,
     },
     {
       label: 'Bank balance',
       value: a.currentBalance !== null ? inr(a.currentBalance) : '—',
       sub: a.currentBalance !== null ? `On ${formatDate(a.period.to)}` : 'No balance column in the file',
       icon: <Icon.bank />,
-      chart: a.hasBalance ? <Sparkline values={months.map((m) => m.endBalance)} forecastFrom={firstForecast} color="var(--s1)" /> : null,
+      chart: a.hasBalance ? <Sparkline values={months.map((m) => m.endBalance)} forecastFrom={firstForecast} color="var(--accent)" /> : null,
     },
     {
       label: 'Next 3 months · net',
@@ -54,7 +54,7 @@ export function SummaryCards({ analysis: a, months }: { analysis: Analysis; mont
   return (
     <section className="kpis" aria-label="Summary">
       {cards.map((c, i) => (
-        <div key={c.label} className={`panel kpi section-enter${c.bad ? ' bad' : ''}`} style={{ animationDelay: `${i * 60}ms` }}>
+        <div key={c.label} className={`panel kpi${c.bad ? ' bad' : ''}`} style={{ animationDelay: `${i * 60}ms` }}>
           <span className="eyebrow">{c.label}</span>
           <span className="v">{c.value}</span>
           <span className="s">{c.sub}</span>

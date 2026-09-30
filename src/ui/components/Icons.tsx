@@ -136,6 +136,58 @@ export const Icon = {
       <path d="m3.5 7 8.5 4.5L20.5 7M12 11.5v10" />
     </Svg>
   ),
+  home: () => (
+    <Svg>
+      <rect x="3.5" y="3.5" width="7" height="8" rx="1.8" />
+      <rect x="13.5" y="3.5" width="7" height="5" rx="1.8" />
+      <rect x="13.5" y="11.5" width="7" height="9" rx="1.8" />
+      <rect x="3.5" y="14.5" width="7" height="6" rx="1.8" />
+    </Svg>
+  ),
+  trend: () => (
+    <Svg>
+      <path d="M3 17l6-6 4 4 8-8" />
+      <path d="M15 7h6v6" />
+    </Svg>
+  ),
+  wallet: () => (
+    <Svg>
+      <path d="M4 7.5A2.5 2.5 0 0 1 6.5 5H18v3" />
+      <rect x="4" y="8" width="16" height="11" rx="2.5" />
+      <path d="M16 13.5h.01" />
+    </Svg>
+  ),
+  repeat: () => (
+    <Svg>
+      <path d="M17 2.5 20.5 6 17 9.5" />
+      <path d="M3.5 11V9.5A3.5 3.5 0 0 1 7 6h13.5" />
+      <path d="M7 21.5 3.5 18 7 14.5" />
+      <path d="M20.5 13v1.5A3.5 3.5 0 0 1 17 18H3.5" />
+    </Svg>
+  ),
+  list: () => (
+    <Svg>
+      <path d="M9 6h11M9 12h11M9 18h11" />
+      <path d="M4.5 6h.01M4.5 12h.01M4.5 18h.01" />
+    </Svg>
+  ),
+  file: () => (
+    <Svg>
+      <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" />
+      <path d="M14 3v5h5M12 17v-6M9.5 13.5 12 11l2.5 2.5" />
+    </Svg>
+  ),
+  shield: () => (
+    <Svg>
+      <path d="M12 3 4.5 6v5.5c0 4.6 3.2 8.3 7.5 9.5 4.3-1.2 7.5-4.9 7.5-9.5V6z" />
+      <path d="m9 12 2.2 2.2L15.5 10" />
+    </Svg>
+  ),
+  arrowRight: () => (
+    <Svg>
+      <path d="M5 12h14M13 6l6 6-6 6" />
+    </Svg>
+  ),
   lock: () => (
     <Svg>
       <rect x="4.5" y="10.5" width="15" height="10" rx="2.5" />

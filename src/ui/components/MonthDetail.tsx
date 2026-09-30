@@ -61,7 +61,7 @@ export function MonthDetail({ months, selected, onSelect, onShowCategory }: Prop
   };
 
   return (
-    <aside className="panel detail section-enter" aria-live="polite" aria-label="Month detail">
+    <aside className="panel detail" aria-live="polite" aria-label="Month detail">
       <div className="phead" style={{ margin: 0, alignItems: 'center' }}>
         <div>
           <span className="eyebrow">Month detail</span>

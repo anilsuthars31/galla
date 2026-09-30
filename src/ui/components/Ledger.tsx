@@ -1,4 +1,4 @@
-import { useMemo, useState, type Ref } from 'react';
+import { useMemo, useState } from 'react';
 import {
   CATEGORIES,
   EXPENSE_CATEGORIES,
@@ -25,7 +25,6 @@ export interface LedgerFilter {
 }
 
 interface Props {
-  ref: Ref<HTMLElement>;
   txns: Txn[];
   filter: LedgerFilter;
   onFilter: (f: LedgerFilter) => void;
@@ -39,7 +38,7 @@ interface Props {
 
 const PAGE = 25;
 
-export function Ledger({ ref, txns, filter, onFilter, onRecategorize, onExport, onReset, corrections, flashKey }: Props) {
+export function Ledger({ txns, filter, onFilter, onRecategorize, onExport, onReset, corrections, flashKey }: Props) {
   const [shown, setShown] = useState(PAGE);
   const set = (f: Partial<LedgerFilter>) => {
     onFilter({ ...filter, ...f });
@@ -65,10 +64,10 @@ export function Ledger({ ref, txns, filter, onFilter, onRecategorize, onExport, 
   const visible = rows.slice(0, shown);
 
   return (
-    <section className="panel section-enter" ref={ref} aria-label="Transactions" style={{ scrollMarginTop: 80 }}>
+    <section className="panel" aria-label="Transactions">
       <div className="phead">
         <div>
-          <h2>Transactions</h2>
+          <h2>All transactions</h2>
           <p>Change a category and every payment to that payee follows. Your choices are remembered in this browser.</p>
         </div>
         <div className="actions">

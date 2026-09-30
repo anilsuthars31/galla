@@ -5,7 +5,7 @@ export function BudgetTable({ analysis: a }: { analysis: Analysis }) {
   const month = monthShort(a.budgetMonth);
   const over = a.budget.filter((b) => b.status === 'over').length;
   return (
-    <div className="panel section-enter">
+    <div className="panel">
       <div className="phead">
         <div>
           <h2>Monthly budget</h2>

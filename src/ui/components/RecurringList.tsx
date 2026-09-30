@@ -7,7 +7,7 @@ const due = (r: Recurring) => `${Math.min(r.day, daysInMonth(r.next))} ${monthSh
 
 export function RecurringList({ analysis: a }: { analysis: Analysis }) {
   return (
-    <div className="panel section-enter">
+    <div className="panel">
       <div className="phead">
         <div>
           <h2>Recurring payments</h2>

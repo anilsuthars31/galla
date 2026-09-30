@@ -19,7 +19,7 @@ interface Point {
 
 export function BalanceChart({ analysis: a, months }: { analysis: Analysis; months: MonthView[] }) {
   return (
-    <div className="panel section-enter">
+    <div className="panel">
       <div className="phead">
         <div>
           <h2>{a.hasBalance ? 'Projected bank balance' : 'Projected cash flow'}</h2>
@@ -97,14 +97,14 @@ function BalanceLine({ analysis: a, months }: { analysis: Analysis; months: Mont
       <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Month-end bank balance, actual and projected">
         <defs>
           <linearGradient id={gid} x1="0" x2="0" y1="0" y2="1">
-            <stop offset="0" stopColor="var(--s1)" stopOpacity="0.28" />
-            <stop offset="1" stopColor="var(--s1)" stopOpacity="0" />
+            <stop offset="0" stopColor="var(--accent)" stopOpacity="0.28" />
+            <stop offset="1" stopColor="var(--accent)" stopOpacity="0" />
           </linearGradient>
         </defs>
         {zoneX !== null && (
           <>
             <rect x={zoneX} y={T} width={W - R - zoneX} height={H - T - B} rx="10" fill="var(--panel-2)" />
-            <text x={W - R - 10} y={T + 16} textAnchor="end" fontSize="10" letterSpacing="1.4" fontFamily="var(--f-mono)" fill="var(--faint)">
+            <text x={W - R - 10} y={T + 16} textAnchor="end" fontSize="10" letterSpacing="1.4" fill="var(--faint)">
               FORECAST
             </text>
           </>
@@ -112,7 +112,7 @@ function BalanceLine({ analysis: a, months }: { analysis: Analysis; months: Mont
         {ticks.map((v) => (
           <g key={v}>
             <line x1={L} x2={W - R} y1={y(v)} y2={y(v)} stroke="var(--line)" strokeWidth="1" strokeDasharray={v === 0 ? undefined : '2 4'} />
-            <text x={L - 10} y={y(v) + 4} textAnchor="end" fontSize="11" fontFamily="var(--f-mono)" fill="var(--faint)">
+            <text x={L - 10} y={y(v) + 4} textAnchor="end" fontSize="11" fill="var(--faint)">
               {inrShort(v)}
             </text>
           </g>
@@ -126,8 +126,8 @@ function BalanceLine({ analysis: a, months }: { analysis: Analysis; months: Mont
           </g>
         )}
         {area && <path d={area} fill={`url(#${gid})`} />}
-        <path d={smoothPath(actual)} fill="none" stroke="var(--s1)" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />
-        {future.length > 1 && <path d={smoothPath(future)} fill="none" stroke="var(--s1)" strokeWidth="2.5" strokeDasharray="7 6" strokeLinecap="round" />}
+        <path d={smoothPath(actual)} fill="none" stroke="var(--accent)" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />
+        {future.length > 1 && <path d={smoothPath(future)} fill="none" stroke="var(--accent)" strokeWidth="2.5" strokeDasharray="7 6" strokeLinecap="round" />}
         {hp && <line x1={x(hp.i)} x2={x(hp.i)} y1={T} y2={H - B} stroke="var(--line-strong)" strokeWidth="1" />}
         {pts.map((p) => (
           <circle
@@ -135,14 +135,14 @@ function BalanceLine({ analysis: a, months }: { analysis: Analysis; months: Mont
             cx={x(p.i)}
             cy={y(p.v)}
             r={hover === p.i ? 6 : 4.2}
-            fill={p.forecast ? 'var(--panel)' : 'var(--s1)'}
-            stroke={p.v < 0 ? 'var(--crit)' : 'var(--s1)'}
+            fill={p.forecast ? 'var(--panel)' : 'var(--accent)'}
+            stroke={p.v < 0 ? 'var(--crit)' : 'var(--accent)'}
             strokeWidth="2.2"
             style={{ transition: 'r .2s' }}
           />
         ))}
         {pts.map((p) => (
-          <text key={p.i} x={x(p.i)} y={H - 10} textAnchor="middle" fontSize="11" fontFamily="var(--f-mono)" fill={p.forecast ? 'var(--faint)' : 'var(--muted)'}>
+          <text key={p.i} x={x(p.i)} y={H - 10} textAnchor="middle" fontSize="11" fill={p.forecast ? 'var(--faint)' : 'var(--muted)'}>
             {monthShort(p.month)}
           </text>
         ))}
@@ -178,7 +178,7 @@ function NetFlowBars({ months }: { months: MonthView[] }) {
     <div className="chart" ref={box}>
       <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Net cash flow per month, actual and forecast">
         <line x1={L} x2={W - R} y1={mid} y2={mid} stroke="var(--line-strong)" />
-        <text x={L - 10} y={mid + 4} textAnchor="end" fontSize="11" fontFamily="var(--f-mono)" fill="var(--faint)">
+        <text x={L - 10} y={mid + 4} textAnchor="end" fontSize="11" fill="var(--faint)">
           ₹0
         </text>
         {months.map((m, i) => {
@@ -196,10 +196,10 @@ function NetFlowBars({ months }: { months: MonthView[] }) {
                 fill={v >= 0 ? 'var(--good)' : 'var(--crit)'}
                 opacity={m.forecast ? 0.4 : 0.9}
               />
-              <text x={cx} y={v >= 0 ? mid - h - 7 : mid + h + 15} textAnchor="middle" fontSize="10.5" fontFamily="var(--f-mono)" fill="var(--muted)">
+              <text x={cx} y={v >= 0 ? mid - h - 7 : mid + h + 15} textAnchor="middle" fontSize="10.5" fill="var(--muted)">
                 {inrShort(v)}
               </text>
-              <text x={cx} y={H - 10} textAnchor="middle" fontSize="11" fontFamily="var(--f-mono)" fill={m.forecast ? 'var(--faint)' : 'var(--muted)'}>
+              <text x={cx} y={H - 10} textAnchor="middle" fontSize="11" fill={m.forecast ? 'var(--faint)' : 'var(--muted)'}>
                 {monthShort(m.month)}
               </text>
             </g>

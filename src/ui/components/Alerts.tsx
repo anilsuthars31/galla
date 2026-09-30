@@ -7,7 +7,7 @@ const ICON = { critical: Icon.critical, warning: Icon.warning, good: Icon.good, 
 export function Alerts({ alerts }: { alerts: Alert[] }) {
   const urgent = alerts.filter((a) => a.level === 'critical').length;
   return (
-    <div className="panel section-enter">
+    <div className="panel">
       <div className="phead">
         <div>
           <h2>What needs attention</h2>

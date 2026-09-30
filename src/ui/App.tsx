@@ -1,15 +1,15 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   CATEGORIES,
   correctionsCsv,
   countCorrections,
+  formatDate,
   friendlyError,
   isCategoryId,
   processStatement,
   rowsToTxns,
   sampleStatementRows,
   type CategoryId,
-  type ExpenseCategory,
   type LoadedClassifier,
   type MonthIndex,
   type Overrides,
@@ -17,22 +17,21 @@ import {
   type Txn,
 } from '../engine';
 import { store } from './storage';
-import { useReducedMotion, useTheme } from './theme';
+import type { ThemePref } from './theme';
 import { downloadText, loadModel, readStatementFile } from './fileio';
 import { monthViews } from './model';
-import { Header } from './components/Header';
-import { SourceBar, ErrorBanner } from './components/SourceBar';
-import { SummaryCards } from './components/SummaryCards';
-import { Stage } from './components/Stage';
-import { MonthDetail } from './components/MonthDetail';
-import { BalanceChart } from './components/BalanceChart';
-import { Alerts } from './components/Alerts';
+import { useRoute, type Page } from './route';
+import { Sidebar, Logo, ThemeButton, AccountButton } from './components/Sidebar';
+import { PageHeader } from './components/PageHeader';
+import { Overview } from './pages/Overview';
+import { CashFlow } from './pages/CashFlow';
+import { Statement } from './pages/Statement';
+import { BusinessPage, type Profile } from './pages/BusinessPage';
 import { BudgetTable } from './components/BudgetTable';
 import { RecurringList } from './components/RecurringList';
 import { Ledger, type LedgerFilter } from './components/Ledger';
 import { Toast, type ToastMessage } from './components/Toast';
 import { DropOverlay, useFileDrop } from './components/DropOverlay';
-import { Footer } from './components/Footer';
 
 export interface Source {
   kind: 'sample' | 'file';
@@ -40,6 +39,16 @@ export interface Source {
 }
 
 const OVERRIDES_KEY = 'galla-overrides';
+const TITLES: Record<Page, string> = {
+  overview: 'Overview',
+  cashflow: 'Cash flow',
+  budget: 'Budget',
+  recurring: 'Recurring payments',
+  transactions: 'Transactions',
+  statement: 'Statement',
+  business: 'Your business',
+};
+
 const EMPTY_FILTER: LedgerFilter = { q: '', cat: '', month: null, review: false };
 
 function loadOverrides(): Overrides {
@@ -54,21 +63,28 @@ const loadSample = (): { raw: RawTxn[]; source: Source } => ({
   source: { kind: 'sample', name: 'Sharma Kirana & General Store (fictional)' },
 });
 
-export function App() {
-  const { pref, theme, cycle } = useTheme();
-  const reducedMotion = useReducedMotion();
+interface Props {
+  /** null in guest mode (sample data, no account). */
+  profile: Profile | null;
+  onProfile: (p: Profile) => void;
+  onLogOut: () => void;
+  /** Guest mode: leave for the welcome page to log in or sign up. */
+  onSignIn: () => void;
+  themePref: ThemePref;
+  onTheme: () => void;
+}
+
+export function App({ profile, onProfile, onLogOut, onSignIn, themePref: pref, onTheme: cycle }: Props) {
+  const [page, go] = useRoute();
 
   const [data, setData] = useState(loadSample);
   const [overrides, setOverrides] = useState<Overrides>(loadOverrides);
   const [selected, setSelected] = useState<MonthIndex | null>(null);
-  const [hidden, setHidden] = useState<ReadonlySet<ExpenseCategory>>(new Set());
   const [filter, setFilter] = useState<LedgerFilter>(EMPTY_FILTER);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [toast, setToast] = useState<ToastMessage | null>(null);
   const [flashKey, setFlashKey] = useState<{ key: string; n: number } | null>(null);
-  const ledgerRef = useRef<HTMLElement>(null);
-  const fileInput = useRef<HTMLInputElement>(null);
 
   const [classifier, setClassifier] = useState<LoadedClassifier | null>(null);
   useEffect(() => {
@@ -89,6 +105,9 @@ export function App() {
   const sel = selected !== null && months.some((m) => m.month === selected) ? selected : lastActual;
 
   useEffect(() => store.set(OVERRIDES_KEY, overrides), [overrides]);
+  useEffect(() => {
+    document.title = `${TITLES[page]} · Galla`;
+  }, [page]);
 
   const notify = useCallback((message: string, action?: ToastMessage['action']) => {
     setToast({ id: Date.now(), message, action });
@@ -102,16 +121,17 @@ export function App() {
         const raw = await readStatementFile(file);
         setData({ raw, source: { kind: 'file', name: file.name } });
         setSelected(null);
-        setHidden(new Set());
         setFilter(EMPTY_FILTER);
+        go('overview');
         notify(`Loaded ${raw.length.toLocaleString('en-IN')} transactions from ${file.name}.`);
       } catch (err) {
         setError(friendlyError(err));
+        go('statement');
       } finally {
         setBusy(false);
       }
     },
-    [notify],
+    [notify, go],
   );
 
   const dragging = useFileDrop(openFile);
@@ -120,8 +140,8 @@ export function App() {
     setError(null);
     setData(loadSample());
     setSelected(null);
-    setHidden(new Set());
     setFilter(EMPTY_FILTER);
+    go('overview');
     notify('Sample statement loaded.');
   };
 
@@ -153,82 +173,125 @@ export function App() {
 
   const showInLedger = (cat: CategoryId, month: MonthIndex) => {
     setFilter({ q: '', cat, month, review: false });
-    ledgerRef.current?.scrollIntoView({ behavior: reducedMotion ? 'auto' : 'smooth', block: 'start' });
+    go('transactions');
   };
 
-  const toggleCategory = (c: ExpenseCategory) =>
-    setHidden((h) => {
-      const next = new Set(h);
-      if (next.has(c)) next.delete(c);
-      else next.add(c);
-      return next;
-    });
+  const showReview = () => {
+    setFilter({ ...EMPTY_FILTER, review: true });
+    go('transactions');
+  };
+
+  const sub = (
+    <>
+      {data.source.kind === 'sample' && (
+        <span className="pill sample">
+          <span className="dot" />
+          Sample data
+        </span>
+      )}
+      <span>
+        {formatDate(analysis.period.from)} – {formatDate(analysis.period.to)} · {txns.length.toLocaleString('en-IN')} transactions
+      </span>
+    </>
+  );
 
   return (
-    <>
-      <Header themePref={pref} onTheme={cycle} onUpload={() => fileInput.current?.click()} onSample={showSample} isSample={data.source.kind === 'sample'} />
-      <input
-        ref={fileInput}
-        type="file"
-        accept=".csv,.xls,.xlsx,.xlsm,.txt,.pdf,text/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        hidden
-        onChange={(e) => {
-          const f = e.target.files?.[0];
-          if (f) void openFile(f);
-          e.target.value = '';
-        }}
+    <div className="shell">
+      <a className="skip" href="#main">
+        Skip to content
+      </a>
+      <div className="mobile-top">
+        <Logo />
+        <b>Galla</b>
+        <span className="grow" />
+        <ThemeButton pref={pref} onTheme={cycle} />
+        <AccountButton profile={profile} onOpen={() => go('business')} onSignIn={onSignIn} />
+      </div>
+      <Sidebar
+        page={page}
+        onNavigate={go}
+        source={data.source}
+        review={reviewCount}
+        themePref={pref}
+        onTheme={cycle}
+        profile={profile}
+        onSignIn={onSignIn}
       />
-      <main className="wrap" id="main">
-        <SourceBar
-          source={data.source}
-          analysis={analysis}
-          count={txns.length}
-          review={reviewCount}
-          onReview={() => {
-            setFilter({ ...EMPTY_FILTER, review: true });
-            ledgerRef.current?.scrollIntoView({ behavior: reducedMotion ? 'auto' : 'smooth', block: 'start' });
-          }}
-        />
-        {error && <ErrorBanner message={error} onClose={() => setError(null)} />}
 
-        <SummaryCards analysis={analysis} months={months} />
+      <main className="content" id="main" key={page}>
+        <PageHeader
+          title={TITLES[page]}
+          sub={
+            page === 'statement'
+              ? 'Choose the bank statement Galla should plan from.'
+              : page === 'business'
+                ? 'What Galla knows about your shop. It uses this to sort your payments.'
+                : sub
+          }
+        >
+          {page !== 'statement' &&
+            page !== 'business' &&
+            (reviewCount > 0 ? (
+              <button className="chip review-jump" onClick={showReview} title="Show the transactions that need you to pick a category">
+                {reviewCount.toLocaleString('en-IN')} need review
+              </button>
+            ) : (
+              <span className="chip static all-done" title="Every transaction got a category from your changes, a keyword rule or the model">
+                ✓ All categorised
+              </span>
+            ))}
+        </PageHeader>
 
-        <section className="grid-stage" aria-label="Month by month">
-          <Stage
-            months={months}
-            selected={sel}
-            onSelect={setSelected}
-            hidden={hidden}
-            onToggle={toggleCategory}
-            theme={theme}
-            reducedMotion={reducedMotion}
+        {page === 'overview' && (
+          <Overview
+            analysis={analysis} months={months} onNavigate={go}
+            onShowCategory={showInLedger}
+            onOpenMonth={(m) => {
+              setSelected(m);
+              go('cashflow');
+            }}
           />
-          <MonthDetail months={months} selected={sel} onSelect={setSelected} onShowCategory={showInLedger} />
-        </section>
-
-        <section className="grid-plan" aria-label="Plan">
-          <BalanceChart analysis={analysis} months={months} />
-          <Alerts alerts={analysis.alerts} />
-        </section>
-
-        <section className="grid-two" aria-label="Budget and recurring payments">
-          <BudgetTable analysis={analysis} />
-          <RecurringList analysis={analysis} />
-        </section>
-
-        <Ledger
-          ref={ledgerRef}
-          txns={txns}
-          filter={filter}
-          onFilter={setFilter}
-          onRecategorize={recategorize}
-          onExport={exportCorrections}
-          onReset={resetCorrections}
-          corrections={Object.keys(overrides).length}
-          flashKey={flashKey}
-        />
-
-        <Footer />
+        )}
+        {page === 'cashflow' && (
+          <CashFlow analysis={analysis} months={months} selected={sel} onSelect={setSelected} onShowCategory={showInLedger} />
+        )}
+        {page === 'budget' && <BudgetTable analysis={analysis} />}
+        {page === 'recurring' && <RecurringList analysis={analysis} />}
+        {page === 'transactions' && (
+          <Ledger
+            txns={txns}
+            filter={filter}
+            onFilter={setFilter}
+            onRecategorize={recategorize}
+            onExport={exportCorrections}
+            onReset={resetCorrections}
+            corrections={Object.keys(overrides).length}
+            flashKey={flashKey}
+          />
+        )}
+        {page === 'statement' && (
+          <Statement
+            source={data.source}
+            analysis={analysis}
+            count={txns.length}
+            error={error}
+            onCloseError={() => setError(null)}
+            onFile={(f) => void openFile(f)}
+            onSample={showSample}
+          />
+        )}
+        {page === 'business' &&
+          (profile ? (
+            <BusinessPage profile={profile} onChange={onProfile} onLogOut={onLogOut} notify={notify} />
+          ) : (
+            <section className="panel guest-card">
+              <h2>You’re trying Galla with sample data</h2>
+              <p className="muted">Create a free account to save your business details, so Galla can sort your own statement accurately.</p>
+              <button className="btn primary" onClick={onSignIn}>
+                Create an account
+              </button>
+            </section>
+          ))}
       </main>
 
       {dragging && <DropOverlay />}
@@ -238,6 +301,6 @@ export function App() {
         </div>
       )}
       {toast && <Toast toast={toast} onClose={() => setToast(null)} />}
-    </>
+    </div>
   );
 }
