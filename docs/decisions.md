@@ -239,3 +239,19 @@ payee names from setup (D13); it still never receives transactions, amounts per 
 the setup payee applied: one of those (tea money) did not move and a truncated spelling that did was not
 counted. The message no longer states a count.
 
+
+## D17. A regular payment is forecast at its usual amount, not total ÷ months (2026-09-30)
+
+**Decision.** A monthly recurring payment is forecast as (usual number of payments in a month, the
+median) × (average payment). Before, it was the total paid ÷ months seen, which turns a one-off extra
+payment into a permanent monthly cost. Also new: an alert when the same payee is paid the same amount
+twice on one day (₹2,000 or more), and a keyword rule for state electricity and water boards.
+
+**Found by.** An owner's restaurant statement (Jul-Sep 2026) forecast −₹58,993 for the next 3 months.
+Rent (₹56,000 on the 28th) was paid twice on 28 Sep, so rent was forecast at ₹74,667 a month; that
+alone explained ₹56,000 of the shortfall. After the fix the outlook is about −₹3,000: July lost
+₹1.07L, August ₹26k and September made ₹75k, so the small negative is real.
+
+**Check.** This matches the forecast's own spec ("recurring payments at their usual amount"). For a
+payee paid once every month the number is unchanged, so the prototype parity test, the forecast
+backtest (docs/forecast_results.md) and the synthetic rule labels are all unchanged.

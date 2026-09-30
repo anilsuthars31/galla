@@ -23,6 +23,13 @@ export const RULES: readonly Rule[] = [
   },
   // Home/shop broadband providers.
   { pattern: /FIBERNET|FIBRENET|FIBER NET|HATHWAY|EXCITEL/, category: 'utilities', direction: 'D', added: true },
+  // State electricity and water boards (Rajasthan's JDVVNL/AVVNL/JVVNL and PHED, and other states').
+  {
+    pattern: /JDVVNL|AVVNL|JVVNL|UPPCL|PSPCL|WBSEDCL|TSSPDCL|APSPDCL|APEPDCL|\bKSEB\b|\bCESC\b|DHBVN|UHBVN|TPCODL|MPPKVVCL|MPMKVVCL|\bPHED\b|JAL BOARD/,
+    category: 'utilities',
+    direction: 'D',
+    added: true,
+  },
   // Internet, Wi-Fi, DTH and phone bills ("BILL/INTERNET/..."). Not "INTERNET BANKING", which is a transfer.
   {
     pattern: /INTERNET(?! ?BANK)|\bWI-?FI\b|\bDTH\b|TATA ?PLAY|TATA ?SKY|DISH ?TV|POSTPAID|\bBILL(PAY)?\b.*\b(MOBILE|PHONE|CABLE)\b|\b(MOBILE|PHONE|CABLE)\b.*\bBILL\b/,

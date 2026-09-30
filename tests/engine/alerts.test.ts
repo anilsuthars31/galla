@@ -97,6 +97,33 @@ describe('buildAlerts', () => {
     );
   });
 
+  describe('possible double payments', () => {
+    it('flags the same amount to the same payee twice on one day', () => {
+      const t = txns([
+        raw('2026-09-28', 'NEFT RENT/RAMESH GUPTA', -56000),
+        raw('2026-09-28', 'NEFT RENT/RAMESH GUPTA', -56000),
+        raw('2026-08-28', 'NEFT RENT/RAMESH GUPTA', -56000),
+      ]);
+      const a = buildAlerts(input({ txns: t })).find((x) => x.title.startsWith('Possible double payment'));
+      expect(a).toMatchObject({ level: 'warning', title: 'Possible double payment: Rent' });
+      expect(a!.body).toBe('₹56,000 was paid twice on 28 Sep. If one was a mistake, ask the bank or the payee to return it.');
+    });
+
+    it('ignores small repeats, different amounts, different days and money coming in', () => {
+      const t = txns([
+        raw('2026-09-10', 'POS/CHAI POINT', -40),
+        raw('2026-09-10', 'POS/CHAI POINT', -40),
+        raw('2026-09-12', 'NEFT/BALAJI FMCG/1', -21000),
+        raw('2026-09-12', 'NEFT/BALAJI FMCG/2', -19500),
+        raw('2026-09-14', 'NEFT/METRO WHOLESALE/1', -8000),
+        raw('2026-09-15', 'NEFT/METRO WHOLESALE/2', -8000),
+        raw('2026-09-16', 'UPI/CR/1/CUSTOMER', 5000),
+        raw('2026-09-16', 'UPI/CR/2/CUSTOMER', 5000),
+      ]);
+      expect(buildAlerts(input({ txns: t })).filter((x) => x.title.startsWith('Possible double payment'))).toEqual([]);
+    });
+  });
+
   it('says when there is too little history', () => {
     expect(titles({ months: [month(0)] })).toContain('info: Only 1 full month of history');
     expect(titles({ months: [month(0), month(1)] })).toContain('info: Only 2 full months of history');

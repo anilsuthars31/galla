@@ -1,7 +1,7 @@
 /* Recurring payment detection: same payee, similar amount, similar day, monthly or quarterly. */
 import type { MonthIndex, Recurring, Txn } from './types';
 import { dayOf, monthOf } from './months';
-import { mean, median, sd, sum } from './stats';
+import { mean, median, sd } from './stats';
 
 /** Max coefficient of variation of amounts (35%). */
 const MAX_CV = 0.35;
@@ -42,7 +42,10 @@ export function findRecurring(txns: readonly Txn[], lastMonth: MonthIndex): Recu
       months: ms.length,
     };
     if (ms.length >= 3 && list.length / ms.length <= 1.5 && cv <= MAX_CV && sd(days) <= MAX_DAY_SD && latest >= lastMonth - 1) {
-      out.push({ ...base, frequency: 'monthly', perMonth: Math.round(sum(amounts) / ms.length), next: lastMonth + 1 });
+      // Usual number of payments a month x average payment. Not total ÷ months: one extra payment
+      // (rent paid twice on one day) would otherwise be forecast as if it happened every month.
+      const perMonthCount = median(ms.map((m) => list.filter((t) => monthOf(t.date) === m).length));
+      out.push({ ...base, frequency: 'monthly', perMonth: Math.round(perMonthCount * avg), next: lastMonth + 1 });
     } else if (ms.length >= 2 && list.length === ms.length && cv <= MAX_CV) {
       const gaps = ms.slice(1).map((m, i) => m - ms[i]!);
       if (gaps.every((g) => g === 3)) out.push({ ...base, frequency: 'quarterly', perMonth: 0, next: latest + 3 });

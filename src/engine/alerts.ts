@@ -2,7 +2,7 @@
    new fixed payments, budget overruns, then notes. */
 import type { Alert, BudgetLine, ForecastMonth, MonthIndex, MonthSummary, Recurring, Txn } from './types';
 import { dayOf, monthLabel } from './months';
-import { inr } from './format';
+import { formatDate, inr } from './format';
 import { mean, sum } from './stats';
 
 export interface AlertInput {
@@ -19,6 +19,8 @@ export interface AlertInput {
 
 /** Sales must move more than 5% between the first and last 3 months to be called a trend. */
 const TREND = 0.05;
+/** Repeats below this are usually real (two teas, two auto rides), not a double payment. */
+const DOUBLE_MIN = 2000;
 
 export function buildAlerts(a: AlertInput): Alert[] {
   const out: Alert[] = [];
@@ -89,6 +91,20 @@ export function buildAlerts(a: AlertInput): Alert[] {
       level: 'warning',
       title: `${b.name} over the usual level`,
       body: `${inr(b.actual)} last month against a typical ${inr(b.limit)}.`,
+    });
+  }
+
+  // Same payee, same amount, twice on one day: often a mistake (or a duplicated row in the export).
+  const seen = new Map<string, number>();
+  for (const t of a.txns) {
+    if (t.dir !== 'D' || t.amount < DOUBLE_MIN) continue;
+    const k = `${t.key}|${t.date}|${t.amount}`;
+    seen.set(k, (seen.get(k) ?? 0) + 1);
+    if (seen.get(k) !== 2) continue;
+    out.push({
+      level: 'warning',
+      title: `Possible double payment: ${t.payee}`,
+      body: `${inr(t.amount)} was paid twice on ${formatDate(t.date, false).replace(/^0/, '')}. If one was a mistake, ask the bank or the payee to return it.`,
     });
   }
 

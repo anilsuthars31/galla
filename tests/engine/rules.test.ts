@@ -40,6 +40,22 @@ describe('ruleCategory', () => {
     expect(ruleCategory(n, 'D')).toBe('utilities');
   });
 
+  // Restaurant statement 2026-09-30: Jodhpur electricity (JDVVNL) and water (PHED) bills needed review.
+  it.each([
+    'BILL/JDVVNL/K1234',
+    'BILLDESK/AVVNL AJMER',
+    'BBPS/JVVNL JAIPUR',
+    'BILL/PHED',
+    'UPPCL ELECTRICITY BILL',
+    'PSPCL/BILL',
+    'BILL/TSSPDCL',
+    'KSEB BILL PAYMENT',
+    'CESC LTD',
+    'DELHI JAL BOARD',
+  ])('electricity / water board %s is utilities', (n) => {
+    expect(ruleCategory(n, 'D')).toBe('utilities');
+  });
+
   it('internet banking is not an internet bill', () => {
     expect(ruleCategory('INTERNET BANKING TRF TO RAMESH', 'D')).toBeNull();
     expect(ruleCategory('INTERNETBANKING/IMPS/SUPPLIER', 'D')).not.toBe('utilities');

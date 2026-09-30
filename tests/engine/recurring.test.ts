@@ -26,6 +26,21 @@ describe('findRecurring', () => {
     expect(r!.txnIds).toHaveLength(6);
   });
 
+  // Bug report 2026-09-30 (restaurant statement): rent ₹56,000 paid twice on 28 Sep made the forecast
+  // assume ₹74,667 of rent every month (total ÷ months), turning the 3-month outlook negative.
+  it('a one-off extra payment does not raise the monthly amount', () => {
+    const rows = [...monthly('NEFT RENT/RAMESH GUPTA', -56000, 28, [7, 8, 9]), raw('2026-09-28', 'NEFT RENT/RAMESH GUPTA', -56000)];
+    const [r] = findRecurring(txns(rows), SEP);
+    expect(r).toMatchObject({ frequency: 'monthly', amount: 56000, count: 4, months: 3, perMonth: 56000 });
+  });
+
+  it('a varying bill paid once a month is still forecast at its average', () => {
+    const t = txns(monthly('BILLDESK/MSEDCL ELECTRICITY/1', -6000, 10, [7, 8, 9], (i) => [0, 900, -300][i]!));
+    const avg = t.reduce((s, x) => s + x.amount, 0) / t.length;
+    expect(new Set(t.map((x) => x.amount)).size).toBe(3); // really varying
+    expect(findRecurring(t, SEP)[0]!.perMonth).toBe(Math.round(avg));
+  });
+
   it('allows some variation in amount (electricity bill)', () => {
     const t = txns(monthly('BILLDESK/MSEDCL ELECTRICITY/1', -6000, 10, [4, 5, 6, 7, 8, 9], (i) => [0, 900, -500, 300, -700, 1200][i]!));
     expect(findRecurring(t, SEP)[0]?.frequency).toBe('monthly');
