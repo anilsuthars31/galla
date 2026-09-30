@@ -34,11 +34,13 @@ interface Props {
   /** Number of payees the owner has re-categorized. */
   corrections: number;
   flashKey: { key: string; n: number } | null;
+  /** Where category changes are kept: the owner's account, or (guests) this browser. */
+  savedTo: 'account' | 'browser';
 }
 
 const PAGE = 25;
 
-export function Ledger({ txns, filter, onFilter, onRecategorize, onExport, onReset, corrections, flashKey }: Props) {
+export function Ledger({ txns, filter, onFilter, onRecategorize, onExport, onReset, corrections, flashKey, savedTo }: Props) {
   const [shown, setShown] = useState(PAGE);
   const set = (f: Partial<LedgerFilter>) => {
     onFilter({ ...filter, ...f });
@@ -68,7 +70,10 @@ export function Ledger({ txns, filter, onFilter, onRecategorize, onExport, onRes
       <div className="phead">
         <div>
           <h2>All transactions</h2>
-          <p>Change a category and every payment to that payee follows. Your choices are remembered in this browser.</p>
+          <p>
+            Change a category and every payment to that payee follows.{' '}
+            {savedTo === 'account' ? 'Your choices are saved to your account.' : 'Your choices are remembered in this browser.'}
+          </p>
         </div>
         <div className="actions">
           {corrections > 0 && (

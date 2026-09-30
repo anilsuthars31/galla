@@ -10,6 +10,7 @@ import { Onboarding } from './setup/Onboarding';
 import type { Profile } from './pages/BusinessPage';
 import type { Account } from '../api/client';
 import type { BusinessProfile, PayeeRule } from '../engine/profile';
+import type { Overrides } from '../engine/types';
 
 const GUEST_KEY = 'galla-guest';
 
@@ -22,7 +23,7 @@ type State =
   | { kind: 'loading' }
   | { kind: 'signedOut'; notice?: string }
   | { kind: 'guest' }
-  | { kind: 'setup'; account: Account; business: BusinessProfile | null; payees: PayeeRule[] }
+  | { kind: 'setup'; account: Account; business: BusinessProfile | null; payees: PayeeRule[]; corrections: Overrides }
   | { kind: 'ready'; profile: Profile };
 
 export function Root() {
@@ -36,9 +37,13 @@ export function Root() {
     }
     setState({ kind: 'loading' });
     try {
-      const [account, business, payees] = await Promise.all([api.me(), api.business(), api.payees()]);
+      const [account, business, payees, corrections] = await Promise.all([api.me(), api.business(), api.payees(), api.corrections()]);
       store.set(GUEST_KEY, false);
-      setState(business?.setupComplete ? { kind: 'ready', profile: { account, business, payees } } : { kind: 'setup', account, business, payees });
+      setState(
+        business?.setupComplete
+          ? { kind: 'ready', profile: { account, business, payees, corrections } }
+          : { kind: 'setup', account, business, payees, corrections },
+      );
     } catch (e) {
       const offline = e instanceof ApiError && e.status === 0;
       setState({
@@ -95,7 +100,9 @@ export function Root() {
           business={state.business}
           payees={state.payees}
           onLogOut={() => void logOut()}
-          onDone={(business, payees) => setState({ kind: 'ready', profile: { account: state.account, business, payees } })}
+          onDone={(business, payees) =>
+            setState({ kind: 'ready', profile: { account: state.account, business, payees, corrections: state.corrections } })
+          }
         />
       );
     case 'guest':

@@ -4,15 +4,17 @@ import {
   correctionsCsv,
   countCorrections,
   formatDate,
+  buildProfileMatcher,
   friendlyError,
-  isCategoryId,
+  payeeCandidates,
+  PAYEE_ROLES,
   processStatement,
   rowsToTxns,
   sampleStatementRows,
   type CategoryId,
   type LoadedClassifier,
   type MonthIndex,
-  type Overrides,
+  type PayeeCandidate,
   type RawTxn,
   type Txn,
 } from '../engine';
@@ -33,6 +35,9 @@ import { BudgetTable } from './components/BudgetTable';
 import { RecurringList } from './components/RecurringList';
 import { Ledger, type LedgerFilter } from './components/Ledger';
 import { Toast, type ToastMessage } from './components/Toast';
+import { WhoAreThese, type Answer } from './components/WhoAreThese';
+import { useOverrides } from './useOverrides';
+import { api, ApiError } from '../api/client';
 import { DropOverlay, useFileDrop } from './components/DropOverlay';
 
 export interface Source {
@@ -65,15 +70,8 @@ const NEEDS_DATA: Partial<Record<Page, string>> = {
 
 const EMPTY_FILTER: LedgerFilter = { q: '', cat: '', month: null, review: false };
 
-/* Guests keep the original key, so corrections made before accounts existed are not lost. */
-const overridesKey = (accountId: string | null) => (accountId ? `galla-overrides:${accountId}` : 'galla-overrides');
-
-function loadOverrides(key: string): Overrides {
-  const saved = store.get<Record<string, unknown>>(key) ?? {};
-  const out: Overrides = {};
-  for (const [k, v] of Object.entries(saved)) if (isCategoryId(v)) out[k] = v;
-  return out;
-}
+/** "Who are these?" answers the owner put off, kept on this device (per account; guests share one list). */
+const dismissedKey = (accountId: string | null) => `galla-dismissed:${accountId ?? 'guest'}`;
 
 const loadSample = (): Data => ({
   raw: rowsToTxns(sampleStatementRows()),
@@ -101,16 +99,20 @@ interface Props {
 export function App({ profile, onProfile, onLogOut, onSignIn, themePref: pref, onTheme: cycle }: Props) {
   const [page, go] = useRoute();
   const accountId = profile?.account.id ?? null;
-  const oKey = overridesKey(accountId);
 
   const [data, setData] = useState<Data | null>(() => initialData(accountId));
-  const [overrides, setOverrides] = useState<Overrides>(() => loadOverrides(oKey));
   const [selected, setSelected] = useState<MonthIndex | null>(null);
   const [filter, setFilter] = useState<LedgerFilter>(EMPTY_FILTER);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [toast, setToast] = useState<ToastMessage | null>(null);
   const [flashKey, setFlashKey] = useState<{ key: string; n: number } | null>(null);
+  const [dismissed, setDismissed] = useState<string[]>(() => store.get<string[]>(dismissedKey(accountId)) ?? []);
+
+  const notify = useCallback((message: string, action?: ToastMessage['action']) => {
+    setToast({ id: Date.now(), message, action });
+  }, []);
+  const { overrides, set: setOverride, replace: replaceOverrides } = useOverrides(accountId, profile?.corrections, notify);
 
   const [classifier, setClassifier] = useState<LoadedClassifier | null>(null);
   useEffect(() => {
@@ -133,16 +135,13 @@ export function App({ profile, onProfile, onLogOut, onSignIn, themePref: pref, o
   const lastActual = analysis?.months[analysis.months.length - 1]?.month ?? 0;
   const sel = selected !== null && months.some((m) => m.month === selected) ? selected : lastActual;
   const showHome = !data && profile !== null && page === 'overview';
+  const candidates = useMemo(() => (txns ? payeeCandidates(txns).filter((c) => !dismissed.includes(c.key)) : []), [txns, dismissed]);
   const title = showHome ? 'Welcome' : TITLES[page];
 
-  useEffect(() => store.set(oKey, overrides), [oKey, overrides]);
+  useEffect(() => store.set(dismissedKey(accountId), dismissed), [accountId, dismissed]);
   useEffect(() => {
     document.title = `${title} · Galla`;
   }, [title]);
-
-  const notify = useCallback((message: string, action?: ToastMessage['action']) => {
-    setToast({ id: Date.now(), message, action });
-  }, []);
 
   const openFile = useCallback(
     async (file: File) => {
@@ -190,20 +189,19 @@ export function App({ profile, onProfile, onLogOut, onSignIn, themePref: pref, o
 
   const recategorize = (t: Txn, category: CategoryId) => {
     const before = overrides;
-    const next = { ...overrides, [t.key]: category };
-    setOverrides(next);
+    setOverride(t.key, category);
     const n = txns?.filter((x) => x.key === t.key).length ?? 1;
     setFlashKey((f) => ({ key: t.key, n: (f?.n ?? 0) + 1 }));
     notify(`${n} payment${n > 1 ? 's' : ''} ${t.dir === 'C' ? 'from' : 'to'} ${t.payee} moved to ${CATEGORIES[category].name}.`, {
       label: 'Undo',
-      run: () => setOverrides(before),
+      run: () => replaceOverrides(before),
     });
   };
 
   const resetCorrections = () => {
     const before = overrides;
-    setOverrides({});
-    notify('Categories reset to the automatic rules.', { label: 'Undo', run: () => setOverrides(before) });
+    replaceOverrides({});
+    notify('Categories reset to the automatic rules.', { label: 'Undo', run: () => replaceOverrides(before) });
   };
 
   const exportCorrections = () => {
@@ -214,6 +212,33 @@ export function App({ profile, onProfile, onLogOut, onSignIn, themePref: pref, o
     const n = countCorrections(txns);
     notify(`Exported ${n} corrected transaction${n > 1 ? 's' : ''}.`);
   };
+
+  /* "Who are these?" answers. A role (employee, landlord, ...) becomes a setup payee, so salary/rent/EMI
+     keep the usual-amount check (tea money to an employee stays out of salary). If the saved name would
+     not match this payee's narrations, a plain correction is added so the answer still applies. */
+  const answerCandidate = async (c: PayeeCandidate, a: Answer) => {
+    const category = 'role' in a ? PAYEE_ROLES[a.role].category : a.category;
+    const n = txns?.filter((x) => x.key === c.key).length ?? c.count;
+    const moved = `${n} payment${n > 1 ? 's' : ''} to ${c.payee} moved to ${CATEGORIES[category].name}.`;
+    if (!('role' in a) || !profile) {
+      setOverride(c.key, category);
+      notify(moved);
+      return;
+    }
+    try {
+      const p = await api.addPayee({ role: a.role, name: c.payee, amount: c.amount, day: c.day, aliases: [] });
+      onProfile({ ...profile, payees: [...profile.payees, p] });
+      const sample = txns?.find((x) => x.key === c.key);
+      if (sample && !buildProfileMatcher([p])(sample.narration, 'D', c.amount)) setOverride(c.key, category);
+      // No count here: the setup payee also picks up spelling variants and leaves out odd amounts, so
+      // the rows that move are not simply the ones grouped under this payee a moment ago.
+      notify(`${c.payee} saved as ${PAYEE_ROLES[a.role].label.toLowerCase()}. Their regular payments now count as ${CATEGORIES[category].name}.`);
+    } catch (e) {
+      notify(e instanceof ApiError ? e.message : 'Couldn’t save that. Please try again.');
+    }
+  };
+
+  const dismissCandidate = (c: PayeeCandidate) => setDismissed((d) => [...d, c.key]);
 
   const showInLedger = (cat: CategoryId, month: MonthIndex) => {
     setFilter({ q: '', cat, month, review: false });
@@ -298,6 +323,7 @@ export function App({ profile, onProfile, onLogOut, onSignIn, themePref: pref, o
 
         {analysis && txns && (
           <>
+            {page === 'overview' && <WhoAreThese candidates={candidates} onAnswer={answerCandidate} onDismiss={dismissCandidate} />}
             {page === 'overview' && (
               <Overview
                 analysis={analysis}
@@ -325,6 +351,7 @@ export function App({ profile, onProfile, onLogOut, onSignIn, themePref: pref, o
                 onReset={resetCorrections}
                 corrections={Object.keys(overrides).length}
                 flashKey={flashKey}
+                savedTo={profile ? 'account' : 'browser'}
               />
             )}
           </>
