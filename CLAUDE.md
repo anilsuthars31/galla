@@ -1,7 +1,7 @@
 # Galla — cash planning from bank statements
 
 Galla turns a small Indian business's bank statement (CSV/Excel) into categorized transactions,
-recurring payments, monthly budget limits, a 3-month cash forecast and plain-language alerts.
+recurring payments, next month's cash forecast, a monthly budget the owner can edit, and plain-language alerts.
 BTech final project (solo). Statements are parsed and categorised in the browser; a small API stores accounts
 and business profiles only (never transactions).
 
@@ -53,8 +53,8 @@ src/
     profileMatch.ts    # matches withdrawals to setup payees (name, UPI id, usual amount)
     candidates.ts      # regular payees to ask the owner about ("Who are these?")
     recurring.ts       # monthly + quarterly detection
-    forecast.ts        # 3-month conservative forecast + closing balance
-    budget.ts          # per-category limits
+    forecast.ts        # next-month conservative forecast + closing balance (D19)
+    budget.ts          # suggested budget per category + the owner's own amounts; next month's plan
     alerts.ts
     types.ts
   engine/profile.ts    # business types + payee roles, shared with server/ (constants and types only)
@@ -110,6 +110,7 @@ Labelling rules (apply consistently, they matter for evaluation):
   a single amount column plus a Dr/Cr column.
 - Error messages are for a shop owner: say what is wrong with the file and what to do ("Download the Excel statement
   from net banking"). Never show a stack trace.
+- The app forecasts next month only (D19); quarterly payments further out are a "Coming up" alert.
 - The forecast stays conservative: income = lower of last-3-month avg and whole-period avg. Do not add ML to the
   forecast without evaluating it against this baseline.
 - Money is shown in Indian format: `₹1,23,456` (`toLocaleString('en-IN')`), lakh shorthand `₹1.85L`.
@@ -139,7 +140,7 @@ Training happens in Python; the browser only predicts.
   `data/labels/` (real rows) only.
 - Report macro-F1 and per-class F1, not plain accuracy (the data is ~88% `sales`; always guessing `sales` scores 88%).
 - Always compare against baselines: majority class, rules only, model only, hybrid.
-- Forecast: train on months 1-3, predict 4-6, report MAPE for inflow and outflow.
+- Forecast: rolling next-month test (months 1..k -> month k+1, k = 3, 4, 5), MAPE for inflow and outflow.
 - Setup payees: `npm run eval:profile` simulates a setup from months 1-3, scores months 4-6, no model
   (it was trained on the synthetic files). Writes docs/profile_results.md; synthetic validation only.
 - `evaluate.py` writes `docs/results.md` with the date, dataset, row counts and the command that produced them.

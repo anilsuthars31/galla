@@ -279,3 +279,26 @@ evaluation are unchanged; the prototype parity test normalises the one intended 
 still requires identical grouping, forecast, budget and alerts. This is done with keyword rules, not by
 retraining the model: rules recognise a fixed list of company names every time, the model only guesses.
 
+## D19. Forecast next month only; the budget starts from history and the owner can change it (2026-09-30)
+
+**Decision.** The app forecasts next month only (was 3 months). The Budget page suggests an amount per
+category from the statement (typical month, never below fixed payments) and the owner can replace any
+suggestion with their own amount, saved to their account (`budget_limit` table; guests: the browser).
+A plan card shows expected money in against the total budget, and, separately, against usual spending
+(the Overview number). An alert fires when the owner's own budget spends more than the expected income.
+A quarterly payment due 2-3 months out gets a "Coming up" alert, since it is no longer in the forecast.
+
+**Why.** Owner feedback: "the forecast is the same for the next three months". It was: every forecast
+month used the same averages (only a quarterly payment could change one), so months 2 and 3 repeated
+month 1 and looked like information they were not. Owners plan month by month; a budget they can adjust
+is more useful than two repeated forecasts.
+
+**Evaluation.** docs/forecast_results.md is now a rolling next-month backtest (months 1..k -> k+1,
+k = 3, 4, 5; 21 predictions). Money-in error 8.1% vs 8.3% for a plain 3-month average and 10.0% for
+repeating last month. It also finally exercises D9: with more than 3 months of history the conservative
+rule lowered the income forecast in 11 of 21 predictions. Closing balance overstated in 10 of 21, so the
+forecast is not yet reliably on the safe side (synthetic validation only).
+
+**Parity.** `analyze` still accepts `horizon`; the prototype parity test runs with `horizon: 3` and still
+matches exactly.
+

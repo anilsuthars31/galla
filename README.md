@@ -1,7 +1,8 @@
 # Galla — cash planning from bank statements
 
 Galla turns a small Indian business's bank statement (CSV or Excel) into categorized transactions,
-recurring payments, monthly budget limits, a 3-month cash forecast and plain-language alerts.
+recurring payments, next month's cash forecast, a monthly budget built from the owner's history (and
+editable by them), and plain-language alerts.
 
 The statement is read and categorised in the browser and never leaves the device. A small API
 (`server/`) holds accounts and business profiles only; there is no tracking. Only the owner's category corrections (and the theme) are saved, in `localStorage`.
@@ -15,7 +16,7 @@ BTech final project (solo), built with Claude Code for the "AI augmented softwar
 |---|---|
 | [docs/decisions.md](docs/decisions.md) | The design decisions and why they were made |
 | [docs/results.md](docs/results.md) | Classifier evaluation: baselines, per-class scores, confusion matrix |
-| [docs/forecast_results.md](docs/forecast_results.md) | Forecast backtest: months 1-3 in, months 4-6 predicted, MAPE vs simple baselines |
+| [docs/forecast_results.md](docs/forecast_results.md) | Next-month forecast backtest (rolling), MAPE vs simple baselines |
 | [docs/profile_results.md](docs/profile_results.md) | Does the business setup help the first upload? Rules only vs setup payees + rules |
 | [docs/ai-usage.md](docs/ai-usage.md) | How Claude Code was used, what I decided, what was caught |
 | [CLAUDE.md](CLAUDE.md) | The working brief the AI follows in this repo |
@@ -98,8 +99,8 @@ src/
     categorize.ts    owner override > setup payee > rule > model (p >= 0.8) > needs review
     profileMatch.ts  withdrawals -> payees named at setup (name, UPI id, usual amount)
     recurring.ts     monthly + quarterly payment detection
-    forecast.ts      3-month conservative forecast + closing balance
-    budget.ts        per-category monthly limits
+    forecast.ts      next-month conservative forecast + closing balance
+    budget.ts        suggested budget per category, the owner's own amounts, next month's plan
     alerts.ts        plain-language alerts
     analyze.ts       ties the above together into one Analysis
     corrections.ts   owner corrections -> CSV (source=correction)
@@ -186,13 +187,18 @@ Payee extraction removes rail words, reference numbers, IFSC codes and VPAs from
 - **Recurring**: same payee, amount within ±35% (coefficient of variation), day of month within
   about 5 days, seen in 3+ months and still active → monthly. One payment every 3 months → quarterly.
   ATM withdrawals are never recurring.
-- **Forecast (conservative)**: income per category = the lower of the last-3-month average and
-  the whole-period average. Expenses = monthly recurring payments + quarterly payments in the months
-  they fall due + the last-3-month average of everything else. Closing balance is carried forward.
-- **Budget**: suggested limit = median month, never below the category's fixed payments, rounded
-  up to ₹500. "Over" means the latest full month is more than 10% above the limit.
+- **Forecast (conservative, next month only)**: income per category = the lower of the last-3-month
+  average and the whole-period average. Expenses = monthly recurring payments at their usual amount +
+  quarterly payments if due + the last-3-month average of everything else. Only next month is shown,
+  because further months would repeat the same averages (D19); a quarterly payment 2-3 months out is a
+  "Coming up" alert.
+- **Budget**: Galla suggests an amount per category (median month, never below the category's fixed
+  payments, rounded up to ₹500); the owner can change any of them (saved to their account). The plan
+  card shows expected money in minus the budget. "Over" means the latest full month is more than 10%
+  above the budget.
 - **Alerts**: forecast shortfalls, balance below one month of fixed costs, sales trend, new
-  monthly payments, budget overruns, personal spending, bank charges, partial months, short history.
+  monthly payments, quarterly payments coming up, possible double payments, budget overruns, a budget
+  above expected income, personal spending, bank charges, partial months, short history.
 
 Money is shown in Indian format: `₹1,23,456`, short form `₹1.85L`.
 
@@ -215,8 +221,9 @@ automatically from 64.5% (keyword rules only) to 79.9%, with no wrong answers ad
 only, not a real-world score).
 
 **Forecast backtest** (`npm run eval:forecast`, [docs/forecast_results.md](docs/forecast_results.md)):
-given months 1-3, the forecast for months 4-6 is off by 9.6% for money in and 6.7% for money out
-on average, but it overstated the closing balance in 5 of 7 synthetic statements (see Findings there).
+rolling next-month test on the synthetic statements (21 predictions): off by 8.1% for money in and 6.0%
+for money out on average, better than a plain 3-month average or repeating last month for money in; the
+closing balance was overstated in 10 of 21 predictions (synthetic validation only).
 
 ## Privacy
 
