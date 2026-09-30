@@ -121,9 +121,10 @@ export function App({ profile, onProfile, onLogOut, onSignIn, themePref: pref, o
     };
   }, []);
 
+  const payees = profile?.payees;
   const processed = useMemo(
-    () => (data ? processStatement(data.raw, overrides, classifier ?? undefined) : null),
-    [data, overrides, classifier],
+    () => (data ? processStatement(data.raw, overrides, classifier ?? undefined, payees ?? []) : null),
+    [data, overrides, classifier, payees],
   );
   const txns = processed?.txns ?? null;
   const analysis = processed?.analysis ?? null;

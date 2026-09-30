@@ -186,6 +186,11 @@ function Row({ t, flash, onChange }: { t: Txn; flash: boolean; onChange: (c: Cat
           <span>{t.payee}</span>
           {t.source === 'review' && <span className="tag review">Review</span>}
           {t.source === 'owner' && <span className="tag mine">Yours</span>}
+          {t.source === 'profile' && (
+            <span className="tag setup" title="Matched a payee from your business setup">
+              Setup
+            </span>
+          )}
         </b>
         <span title={t.narration}>{t.narration}</span>
         {t.source === 'review' && t.suggestions.length > 0 && (

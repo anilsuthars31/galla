@@ -1429,6 +1429,10 @@ select.field {
   background: var(--accent-soft);
   color: var(--accent);
 }
+.tag.setup {
+  background: var(--good-bg);
+  color: var(--good);
+}
 .sugg {
   display: flex;
   flex-wrap: wrap;
