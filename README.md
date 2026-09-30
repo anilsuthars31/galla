@@ -16,6 +16,7 @@ BTech final project (solo), built with Claude Code for the "AI augmented softwar
 | [docs/decisions.md](docs/decisions.md) | The design decisions and why they were made |
 | [docs/results.md](docs/results.md) | Classifier evaluation: baselines, per-class scores, confusion matrix |
 | [docs/forecast_results.md](docs/forecast_results.md) | Forecast backtest: months 1-3 in, months 4-6 predicted, MAPE vs simple baselines |
+| [docs/profile_results.md](docs/profile_results.md) | Does the business setup help the first upload? Rules only vs setup payees + rules |
 | [docs/ai-usage.md](docs/ai-usage.md) | How Claude Code was used, what I decided, what was caught |
 | [CLAUDE.md](CLAUDE.md) | The working brief the AI follows in this repo |
 
@@ -91,7 +92,8 @@ src/
     narration.ts     payment rail (UPI/NEFT/IMPS/RTGS/NACH/ATM/charges...) + payee
     rules.ts         keyword rules -> category
     classifier.ts    V3 model inference from public/model.json (features mirror ml/features.py)
-    categorize.ts    owner override > rule > model (p >= 0.8) > needs review
+    categorize.ts    owner override > setup payee > rule > model (p >= 0.8) > needs review
+    profileMatch.ts  withdrawals -> payees named at setup (name, UPI id, usual amount)
     recurring.ts     monthly + quarterly payment detection
     forecast.ts      3-month conservative forecast + closing balance
     budget.ts        per-category monthly limits
@@ -203,6 +205,11 @@ tests on every push.
 
 **Classifier results** are in [docs/results.md](docs/results.md). They are synthetic validation only:
 `data/labels/` has no real rows yet, so there is no real-world score.
+
+**Business setup** (`npm run eval:profile`, [docs/profile_results.md](docs/profile_results.md)): on held-out
+months of the synthetic statements, naming regular payees at setup raised the share of withdrawals sorted
+automatically from 64.5% (keyword rules only) to 79.9%, with no wrong answers added (synthetic validation
+only, not a real-world score).
 
 **Forecast backtest** (`npm run eval:forecast`, [docs/forecast_results.md](docs/forecast_results.md)):
 given months 1-3, the forecast for months 4-6 is off by 9.6% for money in and 6.7% for money out

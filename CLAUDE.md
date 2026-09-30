@@ -48,7 +48,8 @@ src/
     narration.ts       # rail detection (UPI/NEFT/IMPS/RTGS/NACH/ATM/charges) + payee extraction
     rules.ts           # keyword rules -> category (confidence 1.0)
     classifier.ts      # V3 inference only: loads public/model.json, rebuilds TF-IDF features, returns probabilities
-    categorize.ts      # order: owner override > rule > model (>= 0.8) > "needs review"
+    categorize.ts      # order: owner override > setup payee > rule > model (>= 0.8) > "needs review"
+    profileMatch.ts    # matches withdrawals to setup payees (name, UPI id, usual amount)
     recurring.ts       # monthly + quarterly detection
     forecast.ts        # 3-month conservative forecast + closing balance
     budget.ts          # per-category limits
@@ -115,7 +116,8 @@ Labelling rules (apply consistently, they matter for evaluation):
 
 Training happens in Python; the browser only predicts.
 
-- Order in the app: owner override > rule > model (probability >= 0.8) > "needs review" (show top 2 suggestions).
+- Order in the app: owner override > setup payee (D15) > rule > model (probability >= 0.8) > "needs review"
+  (show top 2 suggestions). Setup payees only match money out; salary, rent and EMI only near their usual amount.
 - Model: scikit-learn `TfidfVectorizer(analyzer='char_wb', ngram_range=(3,5))` on the cleaned narration,
   plus direction, log(amount), day of month and rail as extra features, then `LogisticRegression` (one-vs-rest,
   `class_weight='balanced'`).
@@ -136,6 +138,8 @@ Training happens in Python; the browser only predicts.
 - Report macro-F1 and per-class F1, not plain accuracy (the data is ~88% `sales`; always guessing `sales` scores 88%).
 - Always compare against baselines: majority class, rules only, model only, hybrid.
 - Forecast: train on months 1-3, predict 4-6, report MAPE for inflow and outflow.
+- Setup payees: `npm run eval:profile` simulates a setup from months 1-3, scores months 4-6, no model
+  (it was trained on the synthetic files). Writes docs/profile_results.md; synthetic validation only.
 - `evaluate.py` writes `docs/results.md` with the date, dataset, row counts and the command that produced them.
 - Synthetic leave-one-file-out validation may be reported only when labelled "synthetic validation only, not a
   real-world score". `data/synthetic/CHANGELOG.csv` and `hdfc_kirana_bengaluru_v1.csv` are excluded (D8).

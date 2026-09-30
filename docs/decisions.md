@@ -187,3 +187,29 @@ is confusing. And with accounts, asking for a re-upload on every visit would mak
 level as reading it there; clearing it on logout covers shared computers. A saved statement is validated
 on load and ignored if it is not well-formed.
 
+## D15. Setup payees sort money out before keyword rules (2026-09-30)
+
+**Decision.** A withdrawal that matches a payee the owner named at setup takes that payee's category
+(employee -> salary, landlord -> rent, supplier -> suppliers, lender -> emi, bill -> utilities).
+Order: owner correction > setup payee > keyword rule > model (>= 0.8) > needs review.
+Matching (`src/engine/profileMatch.ts`): a UPI id alias, or every word of the name in the narration,
+allowing a truncated surname (SURESH PAWA), an initial (RAJESH K) and a joined spelling that is a whole
+word (RAJESHK). Money coming in is never matched. For salary, rent and EMI, a payment below 40% or above
+2.5x the usual amount is left to the rules, the model or the owner. Matched rows use the owner's spelling
+of the name, so spelling variants group as one payee.
+
+**Why.** "Suresh Pawar is my employee" is more specific than any keyword: "SHARMA ENTERPRISES" looks like
+a supplier to the rules but the owner knows it is the landlord.
+
+**Evidence (docs/profile_results.md, synthetic validation only).** Setup built from months 1-3, scored on
+months 4-6, no model: withdrawals sorted automatically 64.5% -> 79.9%, correct-when-sorted stays 100%,
+suppliers F1 0.757 -> 0.970, 110 rows fixed and none made worse.
+
+**Found by the evaluation.** The first simulation let the "owner" type names like "Salary" and "Shop Rent"
+(keywords in disguise), which inflated the no-keyword score; it now only uses names visible in the
+narration. With that fixed, small UPI payments to an employee (Rs 500-1,300, labelled personal) were
+being called salary; the amount window for fixed payees came from that.
+
+**Not done.** Setup matches are not exported as training corrections: they are name matches, not
+row-by-row owner decisions, so a wrong match could teach the model a mistake.
+
