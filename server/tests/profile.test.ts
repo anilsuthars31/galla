@@ -104,7 +104,7 @@ describe('payees', () => {
     [{ role: 'employee', name: 'X', day: 0 }, 'Day of the month must be between 1 and 31.'],
     [{ role: 'employee', name: 'X', amount: 0 }, 'Amount must be more than ₹0.'],
     [{ role: 'employee', name: 'X', amount: 99.5 }, 'Amount must be in whole rupees.'],
-    [{ role: 'boss', name: 'X' }, 'Pick who this payee is (employee, landlord, supplier, loan or utility).'],
+    [{ role: 'boss', name: 'X' }, 'Pick who this payee is (employee, landlord, supplier, loan or bill).'],
     [{ role: 'employee', name: '   ' }, "Name can't be empty."],
     [{ role: 'employee', name: 'X', aliases: ['a', 'b', 'c', 'd', 'e', 'f'] }, 'At most 5 other names per payee.'],
   ])('rejects %j with a readable message', async (json, message) => {

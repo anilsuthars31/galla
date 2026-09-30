@@ -1,8 +1,9 @@
 /* Database schema. The four auth tables follow better-auth's expected shape (user, session, account,
    verification); Galla's own tables are added below them. Bank transactions are never stored here. */
 import { sql } from 'drizzle-orm';
-import { boolean, check, index, integer, pgTable, text, timestamp } from 'drizzle-orm/pg-core';
+import { boolean, check, index, integer, pgTable, primaryKey, text, timestamp } from 'drizzle-orm/pg-core';
 import type { BusinessType, PayeeRole } from '../../../src/engine/profile';
+import type { CategoryId } from '../../../src/engine/types';
 
 const created = () => timestamp('created_at', { withTimezone: true }).notNull().defaultNow();
 const updated = () =>
@@ -116,4 +117,21 @@ export const payee = pgTable(
     check('payee_day_range', sql`${t.day} is null or (${t.day} between 1 and 31)`),
     check('payee_amount_positive', sql`${t.amount} is null or ${t.amount} > 0`),
   ],
+);
+
+/**
+ * The owner's category choice for a payee, made in the ledger or the "Who are these?" card.
+ * `payeeKey` is the app's per-payee key (lower-case payee name + ":C" or ":D"), not a transaction.
+ */
+export const correction = pgTable(
+  'correction',
+  {
+    businessId: text('business_id')
+      .notNull()
+      .references(() => business.id, { onDelete: 'cascade' }),
+    payeeKey: text('payee_key').notNull(),
+    category: text('category').$type<CategoryId>().notNull(),
+    updatedAt: updated(),
+  },
+  (t) => [primaryKey({ columns: [t.businessId, t.payeeKey] })],
 );

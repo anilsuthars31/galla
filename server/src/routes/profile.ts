@@ -1,12 +1,13 @@
-/* Business profile and regular payees. Every query is scoped to the caller's own business. */
+/* Business profile, regular payees and category corrections. Every query is scoped to the caller's own business. */
 import { and, asc, eq, sql } from 'drizzle-orm';
 import { Hono, type Context } from 'hono';
 import { HTTPException } from 'hono/http-exception';
 import { z } from 'zod';
 import { BUSINESS_TYPE_IDS, LIMITS, PAYEE_ROLE_IDS, type BusinessProfile, type PayeeRule } from '../../../src/engine/profile';
+import { ALL_CATEGORIES, isIncomeCategory, type CategoryId } from '../../../src/engine/types';
 import type { AppVars } from '../app';
 import type { Db } from '../db/client';
-import { business, payee } from '../db/schema';
+import { business, correction, payee } from '../db/schema';
 
 const text = (max: number, what: string) =>
   z
@@ -33,7 +34,7 @@ const businessBody = z.object({
 });
 
 const payeeBody = z.object({
-  role: z.enum(PAYEE_ROLE_IDS, { error: 'Pick who this payee is (employee, landlord, supplier, loan or utility).' }),
+  role: z.enum(PAYEE_ROLE_IDS, { error: 'Pick who this payee is (employee, landlord, supplier, loan or bill).' }),
   name: text(LIMITS.nameMax, 'Name'),
   amount: z
     .number({ error: 'Amount must be a number.' })
@@ -54,6 +55,30 @@ const payeeBody = z.object({
     .max(LIMITS.aliasesMax, `At most ${LIMITS.aliasesMax} other names per payee.`)
     .default([]),
 });
+
+/* Corrections: the web app's payee key (lower-case letters and digits of the payee name, then :C for
+   money in or :D for money out) mapped to a category. Money in may only get an income category. */
+const CORRECTIONS_MAX = 2000;
+const KEY = /^[a-z0-9]{1,120}:[CD]$/;
+const categoryId = z.enum(ALL_CATEGORIES as [CategoryId, ...CategoryId[]], { error: 'That is not one of Galla’s categories.' });
+const correctionBody = z.object({ category: categoryId });
+const importBody = z.object({
+  corrections: z.record(z.string(), categoryId).refine((o) => Object.keys(o).length <= 500, 'Import at most 500 changes at a time.'),
+});
+
+function checkKey(key: string): string {
+  if (!KEY.test(key)) throw new HTTPException(400, { message: 'That payee could not be recognised.' });
+  return key;
+}
+
+function checkDirection(key: string, category: CategoryId) {
+  const moneyIn = key.endsWith(':C');
+  if (moneyIn !== isIncomeCategory(category)) {
+    throw new HTTPException(400, {
+      message: moneyIn ? 'Money coming in can only be sales or other income.' : 'Money going out can’t be sales or other income.',
+    });
+  }
+}
 
 /** Parses a JSON body; any problem becomes a 400 with the first message a person can act on. */
 async function body<T extends z.ZodType>(c: Context, schema: T): Promise<z.infer<T>> {
@@ -159,6 +184,67 @@ export function profileRoutes(db: Db) {
       .where(and(eq(payee.id, c.req.param('id')), eq(payee.businessId, b.id)))
       .returning({ id: payee.id });
     if (!row) throw new HTTPException(404, { message: 'That payee was not found. It may have been deleted.' });
+    return c.body(null, 204);
+  });
+
+  /* ---------- category corrections (payee key -> category) ---------- */
+
+  const listCorrections = async (businessId: string) => {
+    const rows = await db.select().from(correction).where(eq(correction.businessId, businessId));
+    return Object.fromEntries(rows.map((x) => [x.payeeKey, x.category]));
+  };
+
+  const upsertCorrections = async (businessId: string, entries: [string, CategoryId][]) => {
+    if (!entries.length) return;
+    const [{ n } = { n: 0 }] = await db
+      .select({ n: sql<number>`count(*)::int` })
+      .from(correction)
+      .where(eq(correction.businessId, businessId));
+    if (n + entries.length > CORRECTIONS_MAX) {
+      throw new HTTPException(400, { message: `You can save at most ${CORRECTIONS_MAX.toLocaleString('en-IN')} category changes.` });
+    }
+    await db
+      .insert(correction)
+      .values(entries.map(([payeeKey, category]) => ({ businessId, payeeKey, category })))
+      .onConflictDoUpdate({ target: [correction.businessId, correction.payeeKey], set: { category: sql`excluded.category`, updatedAt: new Date() } });
+  };
+
+  r.get('/corrections', async (c) => {
+    const b = await findBusiness(requireUser(c).id);
+    return c.json({ corrections: b ? await listCorrections(b.id) : {} });
+  });
+
+  r.put('/corrections/:key', async (c) => {
+    const b = await requireBusiness(requireUser(c).id);
+    const key = checkKey(c.req.param('key'));
+    const { category } = await body(c, correctionBody);
+    checkDirection(key, category);
+    await upsertCorrections(b.id, [[key, category]]);
+    return c.json({ key, category });
+  });
+
+  /** Uploads corrections made on this device before accounts kept them (one-time move). */
+  r.post('/corrections/import', async (c) => {
+    const b = await requireBusiness(requireUser(c).id);
+    const { corrections } = await body(c, importBody);
+    const entries = Object.entries(corrections).map(([k, cat]) => {
+      const key = checkKey(k);
+      checkDirection(key, cat);
+      return [key, cat] as [string, CategoryId];
+    });
+    await upsertCorrections(b.id, entries);
+    return c.json({ corrections: await listCorrections(b.id) });
+  });
+
+  r.delete('/corrections/:key', async (c) => {
+    const b = await requireBusiness(requireUser(c).id);
+    await db.delete(correction).where(and(eq(correction.businessId, b.id), eq(correction.payeeKey, checkKey(c.req.param('key')))));
+    return c.body(null, 204);
+  });
+
+  r.delete('/corrections', async (c) => {
+    const b = await requireBusiness(requireUser(c).id);
+    await db.delete(correction).where(eq(correction.businessId, b.id));
     return c.body(null, 204);
   });
 
