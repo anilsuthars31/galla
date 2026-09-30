@@ -83,8 +83,11 @@ export interface RawTxn {
   order: number;
 }
 
-/** Where a transaction's category came from. `review` = nothing was confident, shown as "needs review". */
-export type CategorySource = 'owner' | 'rule' | 'model' | 'review';
+/**
+ * Where a transaction's category came from. `profile` = matched a payee the owner named at setup;
+ * `review` = nothing was confident, shown as "needs review".
+ */
+export type CategorySource = 'owner' | 'profile' | 'rule' | 'model' | 'review';
 
 export interface Suggestion {
   category: CategoryId;
@@ -94,7 +97,7 @@ export interface Suggestion {
 export interface Categorization {
   category: CategoryId;
   source: CategorySource;
-  /** 1 for owner and rule, the model probability for model, 0 for review. */
+  /** 1 for owner, profile and rule, the model probability for model, 0 for review. */
   confidence: number;
   /** Top suggestions from the model when the row needs review (empty without a model). */
   suggestions: Suggestion[];

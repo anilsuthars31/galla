@@ -145,3 +145,44 @@ describe('bill payments (bug report 2026-09-30)', () => {
     expect(b!.category).toBe('utilities');
   });
 });
+
+describe('setup payees (profile)', () => {
+  const landlord = { id: 'l1', role: 'landlord' as const, name: 'Sharma Enterprises', amount: 28000, day: 5, aliases: [] };
+  const staff = { id: 'e1', role: 'employee' as const, name: 'Rajesh Kumar', amount: 12000, day: 1, aliases: [] };
+
+  it('beats a keyword rule: the owner said this "enterprise" is the landlord', () => {
+    const row = raw('2026-09-05', 'NEFT DR-SHARMA ENTERPRISES-N123', -28000);
+    expect(enrich([row])[0]).toMatchObject({ category: 'suppliers', source: 'rule' });
+    expect(enrich([row], {}, undefined, undefined, [landlord])[0]).toMatchObject({ category: 'rent', source: 'profile', payee: 'Sharma Enterprises' });
+  });
+
+  it('sorts a payment with no keyword that would otherwise need review', () => {
+    const row = raw('2026-09-01', 'UPI/DR/412/RAJESH KUMAR/YESB', -12000);
+    expect(enrich([row])[0]!.source).toBe('review');
+    expect(enrich([row], {}, undefined, undefined, [staff])[0]).toMatchObject({ category: 'salary', source: 'profile' });
+  });
+
+  it('an owner correction still wins', () => {
+    const row = raw('2026-09-01', 'UPI/DR/412/RAJESH KUMAR/YESB', -500);
+    const [t] = enrich([row], {}, undefined, undefined, [staff]);
+    const [u] = enrich([row], { [t!.key]: 'personal' }, undefined, undefined, [staff]);
+    expect(u).toMatchObject({ category: 'personal', source: 'owner' });
+  });
+
+  it('money coming in from the same person is not treated as salary', () => {
+    const [t] = enrich([raw('2026-09-03', 'UPI/CR/88/RAJESH KUMAR/Payment', 750)], {}, undefined, undefined, [staff]);
+    expect(t).toMatchObject({ dir: 'C', source: 'rule', category: 'sales' });
+  });
+
+  it('spelling variants of one person become one payee', () => {
+    const txns = enrich(
+      [raw('2026-08-01', 'SALARY/RAJESH K/UPI', -12000), raw('2026-09-01', 'SALARY/RAJESHK/UPI', -12000)],
+      {},
+      undefined,
+      undefined,
+      [staff],
+    );
+    expect(new Set(txns.map((t) => t.key)).size).toBe(1);
+    expect(txns.every((t) => t.payee === 'Rajesh Kumar')).toBe(true);
+  });
+});

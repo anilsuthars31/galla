@@ -1,6 +1,10 @@
-/* Category decision. Order: owner override > rule > model (p >= 0.8) > needs review.
-   The model is optional: pass a Classifier (src/engine/classifier.ts, V3) to enable it. */
-import type { Categorization, Classifier, Direction, Overrides, RawTxn, Rail, Txn } from './types';
+/* Category decision. Order: owner override > setup payee (profile) > rule > model (p >= 0.8) > needs review.
+   The model is optional: pass a Classifier (src/engine/classifier.ts, V3) to enable it.
+   Setup payees come before keyword rules because "Suresh Pawar is my employee" is more specific
+   than any keyword; they only ever match money going out. */
+import type { Categorization, Classifier, Direction, ExpenseCategory, Overrides, RawTxn, Rail, Txn } from './types';
+import type { PayeeRule } from './profile';
+import { buildProfileMatcher } from './profileMatch';
 import { isIncomeCategory } from './types';
 import { RULES, ruleCategory, type Rule } from './rules';
 import { detectRail, extractPayee, payeeKey } from './narration';
@@ -15,6 +19,8 @@ export interface CategorizeInput {
   date: string;
   rail: Rail;
   key: string;
+  /** Category of the setup payee this row matched, if any. */
+  profile?: ExpenseCategory | null;
 }
 
 /** Safe fallback while a row waits for review, so totals still add up. */
@@ -31,6 +37,7 @@ export function categorize(
   if (own && (t.dir === 'C') === isIncomeCategory(own)) {
     return { category: own, source: 'owner', confidence: 1, suggestions: [] };
   }
+  if (t.profile && t.dir === 'D') return { category: t.profile, source: 'profile', confidence: 1, suggestions: [] };
   const rule = ruleCategory(t.narration, t.dir, rules);
   if (rule) return { category: rule, source: 'rule', confidence: 1, suggestions: [] };
 
@@ -48,22 +55,34 @@ export function categorize(
   return { category: fallback(t.dir), source: 'review', confidence: 0, suggestions: [] };
 }
 
-/** Sorts by date (statement order within a day) and adds rail, payee, key and category. */
+/**
+ * Sorts by date (statement order within a day) and adds rail, payee, key and category.
+ * A row that matches a setup payee takes the owner's spelling of the name, so its variants
+ * ("SALARY/RAJESH K", "SALARY/RAJESHK") group as one payee.
+ */
 export function enrich(
   raw: readonly RawTxn[],
   overrides: Overrides = {},
   classifier?: Classifier,
   rules: readonly Rule[] = RULES,
+  payees: readonly PayeeRule[] = [],
 ): Txn[] {
+  const match = buildProfileMatcher(payees);
   return [...raw]
     .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : a.order - b.order))
     .map((r, id) => {
       const dir: Direction = r.deposit > 0 ? 'C' : 'D';
       const amount = dir === 'C' ? r.deposit : r.withdrawal;
       const rail = detectRail(r.narration);
-      const payee = extractPayee(r.narration, rail);
+      const m = match(r.narration, dir, amount);
+      const payee = m ? m.payee.name : extractPayee(r.narration, rail);
       const key = payeeKey(payee, dir);
-      const cat = categorize({ narration: r.narration, dir, amount, date: r.date, rail, key }, overrides, classifier, rules);
+      const cat = categorize(
+        { narration: r.narration, dir, amount, date: r.date, rail, key, profile: m?.category ?? null },
+        overrides,
+        classifier,
+        rules,
+      );
       return { ...r, id, dir, amount, rail, payee, key, ...cat };
     });
 }
