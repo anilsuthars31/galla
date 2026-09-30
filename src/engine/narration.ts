@@ -57,6 +57,9 @@ export function extractPayee(narration: string, rail: Rail): string {
   if (/\bGST\b|CPIN/.test(s)) return 'GST payment';
   if (/ADV(ANCE)? TAX|CHALLAN 280/.test(s)) return 'Advance tax';
   if (/TDS/.test(s) && /TAX|CHALLAN/.test(s)) return 'TDS payment';
+  // "BILL/INTERNET/..." -> "Internet bill", so each kind of bill stays its own payee.
+  const bill = s.match(/^BILL ?(?:PAY)?\s*[/|:-]\s*([A-Z][A-Z ]{1,30}?)\s*(?:[/|:-]|$)/);
+  if (bill?.[1]) return `${titleCase(bill[1].trim())} bill`;
   s = s.replace(/[A-Z]{4}0[A-Z0-9]{6}/g, ' '); // IFSC codes
   const parts = s
     .split(/[/|:*-]+/)

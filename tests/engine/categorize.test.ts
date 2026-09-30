@@ -118,3 +118,30 @@ describe('enrich', () => {
     expect(rows).toEqual(copy);
   });
 });
+
+describe('bill payments (bug report 2026-09-30)', () => {
+  // The model was 66% sure these were utilities, so every one landed in "needs review".
+  const unsure = fakeModel([
+    { category: 'utilities', probability: 0.66 },
+    { category: 'tax', probability: 0.14 },
+  ]);
+
+  it('BILL/INTERNET rows are sorted by the rule, not left for review', () => {
+    const [a, b] = enrich(
+      [raw('2026-09-18', 'BILL/INTERNET/name@okaxis', -1499), raw('2026-09-20', 'BILL/ELECTRICITY/MSEDCL', -2100)],
+      {},
+      unsure,
+    );
+    expect(a).toMatchObject({ payee: 'Internet bill', category: 'utilities', source: 'rule' });
+    expect(b).toMatchObject({ payee: 'Electricity bill', category: 'utilities', source: 'rule' });
+    expect(a!.key).not.toBe(b!.key);
+  });
+
+  it('correcting one bill does not move the other', () => {
+    const rows = [raw('2026-09-18', 'BILL/INTERNET/x@okaxis', -1499), raw('2026-09-20', 'BILL/ELECTRICITY/MSEDCL', -2100)];
+    const [net] = enrich(rows, {}, unsure);
+    const [a, b] = enrich(rows, { [net!.key]: 'other' }, unsure);
+    expect(a!.category).toBe('other');
+    expect(b!.category).toBe('utilities');
+  });
+});

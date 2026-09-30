@@ -64,6 +64,25 @@ describe('extractPayee', () => {
   });
 });
 
+describe('bill payments', () => {
+  // Bug report 2026-09-30: every BILL/... narration became payee "Bill", so correcting the internet
+  // bill would also move the electricity bill.
+  it.each([
+    ['BILL/INTERNET/name@okaxis', 'Internet bill'],
+    ['BILL/ELECTRICITY/MSEDCL', 'Electricity bill'],
+    ['BILLPAY/WATER/PMC', 'Water bill'],
+    ['BILL/MOBILE/9876543210', 'Mobile bill'],
+  ])('%s -> %s', (n, payee) => {
+    expect(extractPayee(n, detectRail(n))).toBe(payee);
+  });
+
+  it('different bills stay different payees', () => {
+    const net = extractPayee('BILL/INTERNET/x@okaxis', 'Other');
+    const power = extractPayee('BILL/ELECTRICITY/MSEDCL', 'Other');
+    expect(payeeKey(net, 'D')).not.toBe(payeeKey(power, 'D'));
+  });
+});
+
 describe('payee key and title case', () => {
   it('keys by letters and digits plus direction', () => {
     expect(payeeKey('Shree Ganesh Distributors', 'D')).toBe('shreeganeshdistributors:D');

@@ -26,6 +26,25 @@ describe('ruleCategory', () => {
     expect(ruleCategory(n, dir)).toBe(cat);
   });
 
+  // Bug report 2026-09-30: BILL/INTERNET/... always landed in "needs review" (model 66% utilities).
+  it.each([
+    'BILL/INTERNET/name@okaxis',
+    'BILLPAY/INTERNET SEP26',
+    'UPI/DR/1/INTERNET BILL',
+    'WIFI BILL SEP26',
+    'BBPS/TATA PLAY DTH',
+    'BILL/MOBILE/9876543210',
+    'MOBILE POSTPAID BILL',
+    'BILLDESK/DISH TV',
+  ])('bill payment %s is utilities', (n) => {
+    expect(ruleCategory(n, 'D')).toBe('utilities');
+  });
+
+  it('internet banking is not an internet bill', () => {
+    expect(ruleCategory('INTERNET BANKING TRF TO RAMESH', 'D')).toBeNull();
+    expect(ruleCategory('INTERNETBANKING/IMPS/SUPPLIER', 'D')).not.toBe('utilities');
+  });
+
   it('broadband providers are utilities', () => {
     expect(ruleCategory('ACT FIBERNET', 'D')).toBe('utilities');
     expect(ruleCategory('HATHWAY BROADBAND', 'D')).toBe('utilities');

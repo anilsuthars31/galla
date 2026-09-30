@@ -29,7 +29,7 @@ export const CATEGORIES: Record<CategoryId, CategoryInfo> = {
   suppliers: { id: 'suppliers', name: 'Suppliers & stock', kind: 'expense' },
   salary: { id: 'salary', name: 'Salaries', kind: 'expense' },
   rent: { id: 'rent', name: 'Rent', kind: 'expense' },
-  utilities: { id: 'utilities', name: 'Utilities', kind: 'expense' },
+  utilities: { id: 'utilities', name: 'Utilities & bills', kind: 'expense' },
   emi: { id: 'emi', name: 'EMI & loans', kind: 'expense' },
   tax: { id: 'tax', name: 'GST & tax', kind: 'expense' },
   personal: { id: 'personal', name: 'Personal', kind: 'expense' },
