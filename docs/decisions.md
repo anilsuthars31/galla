@@ -213,3 +213,29 @@ being called salary; the amount window for fixed payees came from that.
 **Not done.** Setup matches are not exported as training corrections: they are name matches, not
 row-by-row owner decisions, so a wrong match could teach the model a mistake.
 
+## D16. Corrections live on the account; "Who are these?" asks about regular payees (2026-09-30)
+
+**Decision.** An account holder's category corrections (payee key -> category) are stored on the server
+(`correction` table) and loaded at sign-in, so they follow the owner to another phone or computer. The
+change shows immediately and is saved in the background; if saving fails it is rolled back and the owner
+is told. Corrections still on the device from before are uploaded once. Guests keep theirs in the browser.
+
+After an upload, Overview shows "Who are these?": payees paid in 2+ months that only the model or nobody
+could sort (`src/engine/candidates.ts`), unsorted ones first, then by money involved, at most 8. One tap:
+- a role (Employee, Landlord, Supplier, Loan / EMI, Bill) saves a setup payee (D15), so salary, rent and
+  EMI keep the usual-amount check; if that name would not match the payee's narrations, a plain
+  correction is added too so the answer still applies;
+- Personal or Other saves a correction;
+- "Not now" hides it on this device.
+
+**Why.** Typing every employee and supplier at setup is the step owners skip. Asking about the few
+payees Galla actually saw, with one tap each, gets the same information with far less effort, and
+corrections made on the shop computer should not vanish on the owner's phone.
+
+**Privacy.** The server gets payee keys (a payee's name in lower case) and categories. It already held
+payee names from setup (D13); it still never receives transactions, amounts per payment or narrations.
+
+**Found in the browser test.** The first confirmation said "3 payments moved to Salaries", counted before
+the setup payee applied: one of those (tea money) did not move and a truncated spelling that did was not
+counted. The message no longer states a count.
+

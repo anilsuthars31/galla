@@ -50,6 +50,7 @@ src/
     classifier.ts      # V3 inference only: loads public/model.json, rebuilds TF-IDF features, returns probabilities
     categorize.ts      # order: owner override > setup payee > rule > model (>= 0.8) > "needs review"
     profileMatch.ts    # matches withdrawals to setup payees (name, UPI id, usual amount)
+    candidates.ts      # regular payees to ask the owner about ("Who are these?")
     recurring.ts       # monthly + quarterly detection
     forecast.ts        # 3-month conservative forecast + closing balance
     budget.ts          # per-category limits
@@ -158,7 +159,9 @@ Training happens in Python; the browser only predicts.
 - Real statements never leave the browser and never go into Git. `data/real/` is gitignored.
 - The owner's last statement is remembered in this browser's localStorage, one per account
   (`src/ui/savedStatement.ts`), so they don't re-upload every visit. Logging out and "Remove from this
-  device" delete it. Category corrections are also kept per account.
+  device" delete it.
+- Category corrections: account holders' are saved on the server (payee key -> category, D16) and follow
+  them to any device; guests' stay in this browser. `src/ui/useOverrides.ts` is the only place that writes them.
 - The API never receives transactions or narrations. It may store: account, business profile, payee rules
   (name, category, typical amount/day) and category corrections. Anything more needs a decision in docs/decisions.md.
 - API errors are JSON `{ error }` with a sentence a shop owner can act on; never a stack trace.
@@ -173,6 +176,8 @@ Training happens in Python; the browser only predicts.
     projected balance chart + forecast table.
   - Budget, Recurring, Transactions (ledger with per-payee category correction), Statement (upload + sample).
 - Upload lives on the Statement page (and drag-and-drop anywhere), never in a page header.
+- "Who are these?" (Overview): regular payees (money out, 2+ months) that only the model or nobody could sort
+  (`src/engine/candidates.ts`). A role answer becomes a setup payee; Personal/Other become corrections.
 - Light and dark themes via CSS variables. Must work at 400px width. Respect `prefers-reduced-motion`.
 - First open shows the welcome page (sign up / log in) with "Try it with sample data" (guest mode, no account,
   marked "Sample data"). After sign-up: 3-step setup (business, people, suppliers/loans/bills), skippable after

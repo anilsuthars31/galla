@@ -33,8 +33,11 @@ BTech final project (solo), built with Claude Code for the "AI augmented softwar
 - **Statement**: upload a CSV, XLS or XLSX by button, or drop a file anywhere in the app. The built-in
   sample statement (a fictional kirana store in Pune) loads on first open, marked "Sample data". PDFs
   get a friendly message asking for the Excel download instead.
+- **"Who are these?"**: after an upload, Galla lists regular payees it could not sort and asks with one tap
+  (Employee, Landlord, Supplier, Loan / EMI, Bill, Personal, Other). The answer applies to every payment to them.
 - **Transaction ledger** with search and filters. Changing a category applies to every payment to
-  that payee; "Export corrections" downloads the changes as CSV for the next model training run.
+  that payee and is saved to the owner's account (guests: this browser); "Export corrections" downloads the
+  changes as CSV for the next model training run.
 - Light and dark themes, works down to 400px phone width.
 
 ## Setup
