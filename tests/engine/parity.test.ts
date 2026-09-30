@@ -31,7 +31,7 @@ function compare(rows: unknown[][], opts: { comparePayees: (t: Txn) => boolean }
   const pTx = G.enrich(G.rowsToTxns(rows), {});
   const pA = G.analyze(pTx);
   const tx = enrich(rowsToTxns(rows as never), {}, undefined, PROTOTYPE_RULES);
-  const a: Analysis = analyze(tx);
+  const a: Analysis = analyze(tx, { horizon: 3 }); // the prototype forecast 3 months; the app now shows 1 (D19)
 
   it('parses and categorizes every row the same way', () => {
     expect(tx).toHaveLength(pTx.length);

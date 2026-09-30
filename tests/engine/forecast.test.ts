@@ -51,8 +51,13 @@ describe('buildForecast', () => {
   ];
   const last = APR + 5; // Sep
 
-  it('forecasts the 3 months after the statement', () => {
+  it('forecasts next month only by default (D19)', () => {
     const f = buildForecast({ basis, lastMonth: last, recurring: [], nonRecurring: {}, startBalance: null });
+    expect(f.map((m) => m.month)).toEqual([last + 1]);
+  });
+
+  it('can still forecast more months on request', () => {
+    const f = buildForecast({ basis, lastMonth: last, recurring: [], nonRecurring: {}, startBalance: null, horizon: 3 });
     expect(f.map((m) => m.month)).toEqual([last + 1, last + 2, last + 3]);
   });
 
@@ -72,14 +77,14 @@ describe('buildForecast', () => {
       rec({ category: 'rent', frequency: 'monthly', perMonth: 28000, amount: 28000 }),
       rec({ category: 'tax', frequency: 'quarterly', amount: 24000, next: last + 3, payee: 'Advance tax' }),
     ];
-    const f = buildForecast({ basis, lastMonth: last, recurring, nonRecurring: {}, startBalance: null });
+    const f = buildForecast({ basis, lastMonth: last, recurring, nonRecurring: {}, startBalance: null, horizon: 3 });
     expect(f.map((m) => m.byCategory.rent)).toEqual([28000, 28000, 28000]);
     expect(f.map((m) => m.byCategory.tax)).toEqual([undefined, undefined, 24000]);
     expect(f[2]!.dueQuarterly.map((r) => r.payee)).toEqual(['Advance tax']);
   });
 
   it('chains the closing balance', () => {
-    const f = buildForecast({ basis, lastMonth: last, recurring: [], nonRecurring: {}, startBalance: 10000 });
+    const f = buildForecast({ basis, lastMonth: last, recurring: [], nonRecurring: {}, startBalance: 10000, horizon: 3 });
     expect(f.map((m) => m.endBalance)).toEqual([80500, 151000, 221500]);
   });
 

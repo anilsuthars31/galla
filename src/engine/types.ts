@@ -184,16 +184,39 @@ export interface ForecastMonth {
   dueQuarterly: Recurring[];
 }
 
+/** The owner's own monthly budget per category, where they changed the suggestion. */
+export type BudgetLimits = Partial<Record<ExpenseCategory, number>>;
+
 export interface BudgetLine {
   id: ExpenseCategory;
   name: string;
+  /** The budget in use: the owner's own amount if they set one, else the suggestion. */
   limit: number;
+  /** Suggested from history: typical month, never below fixed payments. */
+  suggested: number;
+  /** True when `limit` is the owner's own amount. */
+  custom: boolean;
+  /** What the forecast expects in this category next month. */
+  expected: number;
+  /** The latest full month. */
   actual: number;
   average: number;
   total: number;
   status: 'ok' | 'over';
   /** Monthly amounts over the months used for averages. */
   trend: number[];
+}
+
+export interface BudgetPlan {
+  month: MonthIndex;
+  /** Expected money in (conservative). */
+  income: number;
+  /** Sum of the budget lines. */
+  budget: number;
+  /** Money out the forecast expects if spending stays as usual. */
+  expectedOut: number;
+  /** income - budget: what is left if the owner keeps to the budget. */
+  left: number;
 }
 
 export type AlertLevel = 'critical' | 'warning' | 'good' | 'info';
@@ -215,6 +238,8 @@ export interface Analysis {
   /** The month the budget "actual" column refers to. */
   budgetMonth: MonthIndex;
   alerts: Alert[];
+  /** Next month: expected money in against the total budget. */
+  plan: BudgetPlan;
   currentBalance: number | null;
   hasBalance: boolean;
   /** Sum of monthly recurring payments. */

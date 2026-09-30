@@ -38,6 +38,41 @@ describe('buildBudget', () => {
     expect(buildBudget([m(1, { sales: 5000 })], [])).toEqual([]);
   });
 
+  describe('the owner’s own budget', () => {
+    const basis = [m(1, { suppliers: 30000, rent: 28000 }), m(2, { suppliers: 32000, rent: 28000 }), m(3, { suppliers: 40000, rent: 28000 })];
+
+    it('starts from the suggestion; an own amount replaces it and keeps the suggestion visible', () => {
+      const [rent, sup] = [...buildBudget(basis, [], { suppliers: 45000 })].sort((a, b) => a.id.localeCompare(b.id));
+      expect(rent).toMatchObject({ id: 'rent', limit: 28000, suggested: 28000, custom: false });
+      expect(sup).toMatchObject({ id: 'suppliers', limit: 45000, suggested: 32000, custom: true, status: 'ok' });
+    });
+
+    it('judges "over" against the owner’s amount', () => {
+      const [sup] = buildBudget(basis, [], { suppliers: 30000 }).filter((b) => b.id === 'suppliers');
+      expect(sup).toMatchObject({ limit: 30000, actual: 40000, status: 'over' });
+    });
+
+    it('₹0 is a real budget ("no personal spending")', () => {
+      const [p] = buildBudget([m(1, { personal: 900 })], [], { personal: 0 });
+      expect(p).toMatchObject({ limit: 0, custom: true, status: 'over' });
+    });
+
+    it('a budget for a category with no history yet is kept', () => {
+      const lines = buildBudget(basis, [], { utilities: 5000 });
+      expect(lines.find((b) => b.id === 'utilities')).toMatchObject({ limit: 5000, suggested: 0, custom: true, actual: 0 });
+    });
+
+    it('ignores nonsense amounts', () => {
+      const [sup] = buildBudget(basis, [], { suppliers: -5 }).filter((b) => b.id === 'suppliers');
+      expect(sup).toMatchObject({ limit: 32000, custom: false });
+    });
+
+    it('carries what the forecast expects next month', () => {
+      const [sup] = buildBudget(basis, [], {}, { suppliers: 34000 }).filter((b) => b.id === 'suppliers');
+      expect(sup!.expected).toBe(34000);
+    });
+  });
+
   it('works with one month', () => {
     expect(buildBudget([m(1, { rent: 28000 })], [])[0]).toMatchObject({ limit: 28000, actual: 28000, status: 'ok' });
   });

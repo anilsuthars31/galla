@@ -76,7 +76,9 @@ describe('buildAlerts', () => {
 
   it('announces a new monthly payment and does not double-report its budget overrun', () => {
     const emi = { payee: 'Bajaj Finance', category: 'emi', frequency: 'monthly', amount: 18500, perMonth: 18500, since: APR + 3 } as Recurring;
-    const budget = [{ id: 'emi', name: 'EMI & loans', limit: 500, actual: 18500, average: 0, total: 1, status: 'over', trend: [] as number[] } as const];
+    const budget = [
+      { id: 'emi', name: 'EMI & loans', limit: 500, suggested: 500, custom: false, expected: 0, actual: 18500, average: 0, total: 1, status: 'over', trend: [] as number[] } as const,
+    ];
     const t = titles({ recurring: [emi], budget: [...budget] });
     expect(t).toContain('warning: New monthly payment: Bajaj Finance');
     expect(t.some((x) => x.includes('EMI & loans over'))).toBe(false);

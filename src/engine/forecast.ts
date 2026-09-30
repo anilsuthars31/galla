@@ -1,4 +1,5 @@
-/* 3-month conservative cash forecast.
+/* Conservative cash forecast for next month (more months on request: `horizon`).
+   Every month uses the same averages, so a longer horizon would only repeat the same numbers (D19).
    Income per category  = lower of (last-3-month average, whole-period average).
    Expense per category = recurring monthly payments at their usual amount
                         + quarterly payments in the months they fall due
@@ -23,6 +24,9 @@ export interface ForecastInput {
   horizon?: number;
 }
 
+/** The app forecasts next month only (D19). */
+export const FORECAST_MONTHS = 1;
+
 /** Lower of the recent (last 3) and whole-period averages. */
 export function conservativeAverage(series: readonly number[]): number {
   return Math.min(mean(series.slice(-3)), mean(series));
@@ -34,7 +38,7 @@ export function isDue(r: Recurring, m: MonthIndex): boolean {
 }
 
 export function buildForecast(input: ForecastInput): ForecastMonth[] {
-  const { basis, lastMonth, recurring, nonRecurring, horizon = 3 } = input;
+  const { basis, lastMonth, recurring, nonRecurring, horizon = FORECAST_MONTHS } = input;
   const last3 = basis.slice(-3).map((m) => m.month);
   const out: ForecastMonth[] = [];
   let balance = input.startBalance;

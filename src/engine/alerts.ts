@@ -1,9 +1,10 @@
 /* Plain-language alerts, ordered as they are shown: shortfalls, low balance, sales trend,
    new fixed payments, budget overruns, then notes. */
-import type { Alert, BudgetLine, ForecastMonth, MonthIndex, MonthSummary, Recurring, Txn } from './types';
+import type { Alert, BudgetLine, BudgetPlan, ForecastMonth, MonthIndex, MonthSummary, Recurring, Txn } from './types';
 import { dayOf, monthLabel } from './months';
 import { formatDate, inr } from './format';
 import { mean, sum } from './stats';
+import { isDue } from './forecast';
 
 export interface AlertInput {
   months: readonly MonthSummary[];
@@ -15,6 +16,8 @@ export interface AlertInput {
   txns: readonly Txn[];
   fixedMonthly: number;
   currentBalance: number | null;
+  /** Next month's plan; optional so older callers and tests need not build one. */
+  plan?: BudgetPlan;
 }
 
 /** Sales must move more than 5% between the first and last 3 months to be called a trend. */
@@ -38,6 +41,21 @@ export function buildAlerts(a: AlertInput): Alert[] {
         (big ? ` ${big.payee} (${inr(big.amount)}, quarterly) falls due this month.` : '') +
         ' Hold back stock purchases or collect dues early.',
     });
+  }
+
+  // Only next month is forecast (D19), so a big quarterly payment 2-3 months out gets an early note.
+  const next = a.forecast[0]?.month;
+  if (next !== undefined) {
+    for (const r of a.recurring) {
+      if (r.frequency !== 'quarterly') continue;
+      const due = [next + 1, next + 2].find((m) => isDue(r, m));
+      if (due === undefined || a.forecast.some((f) => f.month === due)) continue;
+      out.push({
+        level: 'info',
+        title: `Coming up: ${r.payee} in ${monthLabel(due)}`,
+        body: `${inr(r.amount)}, paid every quarter. It is not in next month’s forecast, so keep it aside.`,
+      });
+    }
   }
 
   if (a.currentBalance !== null && a.fixedMonthly && a.forecast.length) {
@@ -87,10 +105,19 @@ export function buildAlerts(a: AlertInput): Alert[] {
   ]);
   for (const b of a.budget) {
     if (b.status !== 'over' || !b.limit || explained.has(b.id)) continue;
+    out.push(
+      b.custom
+        ? { level: 'warning', title: `${b.name} over your budget`, body: `${inr(b.actual)} last month against your budget of ${inr(b.limit)}.` }
+        : { level: 'warning', title: `${b.name} over the usual level`, body: `${inr(b.actual)} last month against a typical ${inr(b.limit)}.` },
+    );
+  }
+
+  // Only once the owner has set their own budget: before that it is just the history, already covered above.
+  if (a.plan && a.budget.some((b) => b.custom) && a.plan.left < 0) {
     out.push({
       level: 'warning',
-      title: `${b.name} over the usual level`,
-      body: `${inr(b.actual)} last month against a typical ${inr(b.limit)}.`,
+      title: `Your budget is ${inr(-a.plan.left)} more than expected income`,
+      body: `Budget ${inr(a.plan.budget)} against about ${inr(a.plan.income)} coming in during ${monthLabel(a.plan.month)}. Lower a category on the Budget page, or plan how to cover the gap.`,
     });
   }
 

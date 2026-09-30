@@ -1,5 +1,5 @@
 /* Public engine API. Everything here is pure: same input, same output. */
-import type { Analysis, Cell, Classifier, Overrides, RawTxn, Txn } from './types';
+import type { Analysis, BudgetLimits, Cell, Classifier, Overrides, RawTxn, Txn } from './types';
 import type { PayeeRule } from './profile';
 import { rowsToTxns } from './parse';
 import { enrich } from './categorize';
@@ -17,10 +17,10 @@ export { buildProfileMatcher, type ProfileMatch, type ProfileMatcher } from './p
 export { payeeCandidates, type PayeeCandidate } from './candidates';
 export { loadClassifier, ModelFormatError, type LoadedClassifier } from './classifier';
 export { findRecurring } from './recurring';
-export { buildForecast } from './forecast';
+export { buildForecast, FORECAST_MONTHS } from './forecast';
 export { buildBudget } from './budget';
 export { buildAlerts } from './alerts';
-export { analyze, summarizeMonths } from './analyze';
+export { analyze, summarizeMonths, type AnalyzeOptions } from './analyze';
 export { sampleStatementRows } from './sample';
 export { correctionsCsv, countCorrections, CSV_COLUMNS } from './corrections';
 
@@ -35,9 +35,10 @@ export function processStatement(
   overrides: Overrides = {},
   classifier?: Classifier,
   payees: readonly PayeeRule[] = [],
+  limits: BudgetLimits = {},
 ): Processed {
   const txns = enrich(raw, overrides, classifier, undefined, payees);
-  return { txns, analysis: analyze(txns) };
+  return { txns, analysis: analyze(txns, { limits }) };
 }
 
 /** Spreadsheet/CSV rows -> categorized transactions + analysis. */

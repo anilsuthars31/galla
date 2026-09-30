@@ -60,9 +60,26 @@ describe('analyze: built-in sample statement', () => {
     expect(r['Netflix']).toMatchObject({ category: 'personal', amount: 649 });
   });
 
-  it('forecasts October to December, with advance tax in December', () => {
-    expect(a.forecast.map((f) => monthLabel(f.month))).toEqual(['Oct 2026', 'Nov 2026', 'Dec 2026']);
-    expect(a.forecast[2]!.dueQuarterly.map((r) => r.payee)).toEqual(['Advance tax']);
+  it('forecasts October only, and warns early that advance tax is due in December', () => {
+    expect(a.forecast.map((f) => monthLabel(f.month))).toEqual(['Oct 2026']);
+    const soon = a.alerts.find((x) => x.title === 'Coming up: Advance tax in Dec 2026');
+    expect(soon).toMatchObject({ level: 'info' });
+    expect(soon!.body).toBe('₹24,000, paid every quarter. It is not in next month’s forecast, so keep it aside.');
+  });
+
+  it('builds next month’s plan: expected money in against the budget', () => {
+    expect(a.plan.month).toBe(a.forecast[0]!.month);
+    expect(a.plan.income).toBe(a.forecast[0]!.inflow);
+    expect(a.plan.budget).toBe(a.budget.reduce((s, b) => s + b.limit, 0));
+    expect(a.plan.left).toBe(a.plan.income - a.plan.budget);
+  });
+
+  it('an own budget above expected income raises an alert; the history alone does not', () => {
+    const limits = { suppliers: 9_00_000 };
+    const mine = analyze(t, { limits });
+    expect(mine.plan.left).toBeLessThan(0);
+    expect(mine.alerts.map((x) => x.title).some((x) => x.startsWith('Your budget is'))).toBe(true);
+    expect(a.alerts.map((x) => x.title).some((x) => x.startsWith('Your budget is'))).toBe(false);
   });
 
   it('raises the new EMI and the personal-spending note', () => {
@@ -129,21 +146,21 @@ describe('analyze: edge cases', () => {
   it('uses all months when none is full', () => {
     const a = analyze(txns(shop('2026-04-10', '2026-04-15')));
     expect(a.basisMonths).toEqual([monthOf('2026-04-01')]);
-    expect(a.forecast).toHaveLength(3);
+    expect(a.forecast).toHaveLength(1);
   });
 
   it('works with 1 month of history', () => {
     const a = analyze(txns(shop('2026-04-01', '2026-04-30')));
     expect(a.months).toHaveLength(1);
     expect(a.recurring).toEqual([]);
-    expect(a.forecast.map((f) => f.inflow)).toEqual([150000, 150000, 150000]);
+    expect(a.forecast.map((f) => f.inflow)).toEqual([150000]);
     expect(a.alerts.map((x) => x.title)).toContain('Only 1 full month of history');
   });
 
   it('works with 2 months of history', () => {
     const a = analyze(txns(shop('2026-04-01', '2026-05-31')));
     expect(a.months).toHaveLength(2);
-    expect(a.forecast).toHaveLength(3);
+    expect(a.forecast).toHaveLength(1);
     expect(a.budget.length).toBeGreaterThan(0);
     expect(a.alerts.map((x) => x.title)).toContain('Only 2 full months of history');
   });

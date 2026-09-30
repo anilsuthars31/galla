@@ -1,7 +1,9 @@
-/* Forecast backtest (CLAUDE.md "Evaluation"): train on months 1-3, predict months 4-6, report MAPE.
+/* Forecast backtest (CLAUDE.md "Evaluation"): the app forecasts next month only (D19), so this is a
+   rolling one-month-ahead test. For each statement, give the app months 1..k and predict month k+1,
+   for k = 3, 4, 5 (three predictions per file, each from data it had not seen).
    Run: npm run eval:forecast   -> writes docs/forecast_results.md
    Uses the app's own parser and engine. Categories come from rules only (no model), so nothing learned
-   from months 4-6 leaks into the forecast. */
+   from the test month leaks into the forecast. */
 import { writeFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { it } from 'vitest';
@@ -9,8 +11,7 @@ import { parseStatementText, processStatement, summarizeMonths, enrich, monthLab
 import { ROOT, readText } from '../helpers';
 
 const EXCLUDED = new Set(['CHANGELOG.csv', 'hdfc_kirana_bengaluru_v1.csv']); // see docs/decisions.md D8
-const TRAIN_MONTHS = 3;
-const HORIZON = 3;
+const ORIGINS = [3, 4, 5]; // months of history given before each prediction
 
 type Method = 'galla' | 'avg3' | 'last';
 const METHODS: Record<Method, string> = {
@@ -19,87 +20,83 @@ const METHODS: Record<Method, string> = {
   last: 'Repeat last month',
 };
 
+interface Point {
+  inflow: number;
+  outflow: number;
+  endBalance: number;
+}
+
 interface Row {
   file: string;
-  months: MonthIndex[];
-  actual: { inflow: number[]; outflow: number[]; endBalance: number };
-  pred: Record<Method, { inflow: number[]; outflow: number[]; endBalance: number }>;
+  history: number;
+  month: MonthIndex;
+  actual: Point;
+  pred: Record<Method, Point>;
 }
 
 const monthOfIso = (iso: string) => Number(iso.slice(0, 4)) * 12 + Number(iso.slice(5, 7)) - 1;
 const mean = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length;
-const mape = (p: number[], a: number[]) => mean(p.map((v, i) => Math.abs(v - a[i]!) / a[i]!));
-const bias = (p: number[], a: number[]) => mean(p.map((v, i) => (v - a[i]!) / a[i]!));
+const ape = (p: number, a: number) => Math.abs(p - a) / a;
+const err = (p: number, a: number) => (p - a) / a;
 const localDate = () => {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 };
 const pct = (x: number) => `${(x * 100).toFixed(1)}%`;
 const signed = (x: number) => `${x >= 0 ? '+' : '−'}${Math.abs(x * 100).toFixed(1)}%`;
-const lakh = (x: number) => `₹${(x / 1e5).toFixed(2)}L`;
 
-function backtest(file: string): Row {
+function backtest(file: string): Row[] {
   const raw = parseStatementText(readText(`data/synthetic/${file}`));
   const first = monthOfIso(raw.reduce((m, t) => (t.date < m ? t.date : m), raw[0]!.date));
-  const cut = first + TRAIN_MONTHS;
-  const train = raw.filter((t) => monthOfIso(t.date) < cut);
-  const all = summarizeMonths(enrich(raw));
-  const testMonths = all.filter((m) => m.month >= cut && m.month < cut + HORIZON);
-  if (testMonths.length !== HORIZON) throw new Error(`${file}: needs ${TRAIN_MONTHS + HORIZON} months`);
-
-  const { analysis } = processStatement(train);
-  const basis = analysis.months;
-  const start = analysis.currentBalance ?? 0;
-  const flat = (inflow: number, outflow: number) => ({
-    inflow: Array(HORIZON).fill(inflow),
-    outflow: Array(HORIZON).fill(outflow),
-    endBalance: start + HORIZON * (inflow - outflow),
-  });
-  const lastM = basis[basis.length - 1]!;
-  return {
-    file,
-    months: testMonths.map((m) => m.month),
-    actual: {
-      inflow: testMonths.map((m) => m.inflow),
-      outflow: testMonths.map((m) => m.outflow),
-      endBalance: testMonths[HORIZON - 1]!.endBalance!,
-    },
-    pred: {
-      galla: {
-        inflow: analysis.forecast.map((f) => f.inflow),
-        outflow: analysis.forecast.map((f) => f.outflow),
-        endBalance: analysis.forecast[HORIZON - 1]!.endBalance!,
+  const actualMonths = summarizeMonths(enrich(raw));
+  return ORIGINS.map((k) => {
+    const cut = first + k;
+    const train = raw.filter((t) => monthOfIso(t.date) < cut);
+    const target = actualMonths.find((m) => m.month === cut);
+    if (!target) throw new Error(`${file}: no month ${k + 1}`);
+    const { analysis } = processStatement(train);
+    const basis = analysis.months;
+    const start = analysis.currentBalance ?? 0;
+    const flat = (inflow: number, outflow: number): Point => ({ inflow, outflow, endBalance: start + inflow - outflow });
+    const recent = basis.slice(-3);
+    const lastM = basis[basis.length - 1]!;
+    const f = analysis.forecast[0]!;
+    return {
+      file,
+      history: k,
+      month: cut,
+      actual: { inflow: target.inflow, outflow: target.outflow, endBalance: target.endBalance! },
+      pred: {
+        galla: { inflow: f.inflow, outflow: f.outflow, endBalance: f.endBalance! },
+        avg3: flat(mean(recent.map((m) => m.inflow)), mean(recent.map((m) => m.outflow))),
+        last: flat(lastM.inflow, lastM.outflow),
       },
-      avg3: flat(mean(basis.map((m) => m.inflow)), mean(basis.map((m) => m.outflow))),
-      last: flat(lastM.inflow, lastM.outflow),
-    },
-  };
+    };
+  });
 }
 
 /** Plain-language findings, computed from the numbers so they stay true when the data changes. */
 function findings(rows: Row[]): string[] {
-  const same = rows.every((r) => r.pred.galla.inflow.every((v, i) => Math.abs(v - r.pred.avg3.inflow[i]!) < 0.5));
-  const over = rows.filter((r) => r.pred.galla.endBalance > r.actual.endBalance);
-  const outBias = mean(rows.map((r) => bias(r.pred.galla.outflow, r.actual.outflow)));
   const out: string[] = [];
-  if (same) {
-    out.push(
-      `- **With ${TRAIN_MONTHS} months of history, Galla's income forecast equals the plain ${TRAIN_MONTHS}-month average.** ` +
-        'The rule "lower of the last-3-month and whole-period average" (docs/decisions.md D9) only differs from a plain average ' +
-        'when there are more than 3 months to average over, so this backtest cannot show its protective effect.',
-    );
-  }
+  const over = rows.filter((r) => r.pred.galla.endBalance > r.actual.endBalance);
+  const outBias = mean(rows.map((r) => err(r.pred.galla.outflow, r.actual.outflow)));
+  const gIn = mean(rows.map((r) => ape(r.pred.galla.inflow, r.actual.inflow)));
+  const aIn = mean(rows.map((r) => ape(r.pred.avg3.inflow, r.actual.inflow)));
+  const lower = rows.filter((r) => r.pred.galla.inflow < r.pred.avg3.inflow - 0.5);
   out.push(
-    over.length > rows.length / 2
-      ? `- **The closing balance was overstated in ${over.length} of ${rows.length} files** ` +
-          `(${over.map((r) => r.file.replace('.csv', '')).join(', ')}). The forecast is not on the safe side here: ` +
-          `outflow was under-forecast by ${signed(outBias).replace('−', '')} on average, because spending in these files rises over time ` +
-          '(e.g. the "growth" file moves from 80% to 90% of income spent). A forecast that overstates the balance is the risky direction for a shop owner.'
-      : `- The closing balance was overstated in ${over.length} of ${rows.length} files, so the forecast is mostly on the safe side.`,
+    lower.length
+      ? `- **The conservative income rule (D9) lowered the income forecast in ${lower.length} of ${rows.length} predictions** (it can only differ from a plain average with more than 3 months of history). Inflow error: ${pct(gIn)} for Galla vs ${pct(aIn)} for a plain 3-month average.`
+      : `- The conservative income rule (D9) never went below the plain 3-month average here, so it made no difference in this data.`,
   );
   out.push(
-    '- **Possible fix to evaluate next (not made):** forecast outflow from the higher of the recent and whole-period averages, ' +
-      'mirroring the income rule, then re-run this backtest. It is a finance rule, so it needs the owner-side decision first.',
+    over.length > rows.length / 2
+      ? `- **The next month's closing balance was overstated in ${over.length} of ${rows.length} predictions.** Outflow was under-forecast by ${signed(outBias).replace('−', '')} on average: spending in these files rises over time, and an average of past months lags behind. Overstating the balance is the risky direction for a shop owner.`
+      : over.length > rows.length / 3
+        ? `- The next month's closing balance was overstated in ${over.length} of ${rows.length} predictions: about as often too high as too low, so it is not reliably on the safe side yet.`
+        : `- The next month's closing balance was overstated in only ${over.length} of ${rows.length} predictions, so the forecast is mostly on the safe side.`,
+  );
+  out.push(
+    '- **Why one month (D19):** every forecast month used the same averages, so months 2 and 3 only repeated month 1. Big quarterly payments beyond next month are shown as a separate "Coming up" alert instead.',
   );
   return out;
 }
@@ -110,41 +107,46 @@ function table(header: string[], rows: string[][]): string {
 
 it('forecast backtest -> docs/forecast_results.md', () => {
   const files = readdirSync(join(ROOT, 'data/synthetic')).filter((f) => f.endsWith('.csv') && !EXCLUDED.has(f)).sort();
-  const rows = files.map(backtest);
+  const rows = files.flatMap(backtest);
   const methods = Object.keys(METHODS) as Method[];
+  const avg = (fn: (r: Row) => number, rs = rows) => mean(rs.map(fn));
 
-  const perFile = rows.map((r) => [
-    r.file.replace('.csv', ''),
-    ...methods.flatMap((m) => [pct(mape(r.pred[m].inflow, r.actual.inflow)), pct(mape(r.pred[m].outflow, r.actual.outflow))]),
-  ]);
-  const avg = (fn: (r: Row) => number) => mean(rows.map(fn));
   const summary = methods.map((m) => [
     METHODS[m],
-    pct(avg((r) => mape(r.pred[m].inflow, r.actual.inflow))),
-    signed(avg((r) => bias(r.pred[m].inflow, r.actual.inflow))),
-    pct(avg((r) => mape(r.pred[m].outflow, r.actual.outflow))),
-    signed(avg((r) => bias(r.pred[m].outflow, r.actual.outflow))),
-    signed(avg((r) => (r.pred[m].endBalance - r.actual.endBalance) / r.actual.endBalance)),
+    pct(avg((r) => ape(r.pred[m].inflow, r.actual.inflow))),
+    signed(avg((r) => err(r.pred[m].inflow, r.actual.inflow))),
+    pct(avg((r) => ape(r.pred[m].outflow, r.actual.outflow))),
+    signed(avg((r) => err(r.pred[m].outflow, r.actual.outflow))),
+    signed(avg((r) => err(r.pred[m].endBalance, r.actual.endBalance))),
     `${rows.filter((r) => r.pred[m].endBalance <= r.actual.endBalance).length} of ${rows.length}`,
   ]);
-  const balances = rows.map((r) => [
-    r.file.replace('.csv', ''),
-    lakh(r.actual.endBalance),
-    ...methods.map((m) => lakh(r.pred[m].endBalance)),
-  ]);
+  const byHistory = ORIGINS.map((k) => {
+    const rs = rows.filter((r) => r.history === k);
+    return [
+      `${k} months → month ${k + 1} (${monthLabel(rs[0]!.month, true)})`,
+      ...methods.flatMap((m) => [pct(avg((r) => ape(r.pred[m].inflow, r.actual.inflow), rs)), pct(avg((r) => ape(r.pred[m].outflow, r.actual.outflow), rs))]),
+    ];
+  });
+  const perFile = files.map((f) => {
+    const rs = rows.filter((r) => r.file === f);
+    return [
+      f.replace('.csv', ''),
+      ...methods.flatMap((m) => [pct(avg((r) => ape(r.pred[m].inflow, r.actual.inflow), rs)), pct(avg((r) => ape(r.pred[m].outflow, r.actual.outflow), rs))]),
+    ];
+  });
 
   const md = [
-    '# Forecast backtest',
+    '# Forecast backtest (next month)',
     '',
     `- **Date:** ${localDate()}`,
     '- **Command:** `npm run eval:forecast`',
-    `- **Data:** ${rows.length} synthetic statements in \`data/synthetic/\` (${[...EXCLUDED].map((f) => `\`${f}\``).join(', ')} excluded)`,
-    `- **Method:** give the app only months 1-${TRAIN_MONTHS} (${monthLabel(rows[0]!.months[0]! - TRAIN_MONTHS, true)}–${monthLabel(rows[0]!.months[0]! - 1, true)}), forecast months ${TRAIN_MONTHS + 1}-${TRAIN_MONTHS + HORIZON} (${rows[0]!.months.map((m) => monthLabel(m, true)).join(', ')}), compare with what actually happened. Categories from rules only, so nothing from the test months leaks in.`,
+    `- **Data:** ${files.length} synthetic statements in \`data/synthetic/\` (${[...EXCLUDED].map((f) => `\`${f}\``).join(', ')} excluded)`,
+    `- **Method:** the app forecasts next month only (D19). Rolling test: give it months 1..k and predict month k+1, for k = ${ORIGINS.join(', ')}, so ${rows.length} predictions (${ORIGINS.length} per file), each compared with what actually happened. Categories from rules only, so nothing from the predicted month leaks in.`,
     '- **MAPE** = average of |forecast − actual| ÷ actual. **Bias** = average signed error: negative means the forecast was lower than reality.',
     '',
     '> Synthetic statements only, not a real-world score. Each file follows a scripted pattern (stable, growth, one loss month, volatile…), so real statements will be noisier.',
     '',
-    '## Summary (average over files)',
+    '## Summary (average over all predictions)',
     '',
     table(['Method', 'Inflow MAPE', 'Inflow bias', 'Outflow MAPE', 'Outflow bias', 'Closing balance error', 'Balance not overstated'], summary),
     '',
@@ -152,13 +154,13 @@ it('forecast backtest -> docs/forecast_results.md', () => {
     '',
     ...findings(rows),
     '',
-    '## MAPE per file',
+    '## MAPE by amount of history',
+    '',
+    table(['History → predicted', ...methods.flatMap((m) => [`${METHODS[m]}: inflow`, 'outflow'])], byHistory),
+    '',
+    '## MAPE per file (average of its predictions)',
     '',
     table(['File', ...methods.flatMap((m) => [`${METHODS[m]}: inflow`, 'outflow'])], perFile),
-    '',
-    `## Closing balance at the end of ${monthLabel(rows[0]!.months[HORIZON - 1]!, true)}`,
-    '',
-    table(['File', 'Actual', ...methods.map((m) => METHODS[m])], balances),
     '',
   ].join('\n');
   writeFileSync(join(ROOT, 'docs/forecast_results.md'), md);
